@@ -1,0 +1,1 @@
+cc -I./src main.cc $(sdl2-config --cflags --libs) -g -o qdr
