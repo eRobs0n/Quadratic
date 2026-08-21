@@ -193,6 +193,16 @@ void Greeting(){
 	ColoredPrintf(CYAN, BLACK, "Quadratic Equation Solver\n ax\u00B2 + bx + c = 0"); //\u00B2 - unicode ² symbol
 }
 
+void PrintEquation(double* coeff, int digits_after_point){
+	printf("You entered ");
+	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeff[2]);
+	printf("x\u00B2%c", (coeff[1]>=0) ? '+' : ' ');
+	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeff[1]);
+	printf("x%c", (coeff[0]>=0) ? '+' : ' ');
+	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeff[0]);
+	printf(" = 0 equation.\n");
+}
+
 void RequestCoefficients(double* coeff, size_t coeff_size, int digits_after_point){
 	assert(coeff_size >= COEFF_CNT);
 
@@ -211,12 +221,7 @@ void RequestCoefficients(double* coeff, size_t coeff_size, int digits_after_poin
 		}
 		input_result = EnterCoefficients(coeff);
 	}
-
-	ColoredPrintf(GREEN, BLACK, "You entered %.*lfx\u00B2 %c %.*lfx %c %.*lf = 0 equation.\n", 
-		                     digits_after_point,      coeff[2], 
-		(coeff[1]>=0) ? '+' : '-', digits_after_point, fabs(coeff[1]), 
-		(coeff[0]>=0) ? '+' : '-', digits_after_point, fabs(coeff[0])
-		); 
+	PrintEquation(coeff, digits_after_point);
 }
 
 int main(int argc, char* argv[]){
