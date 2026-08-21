@@ -1,5 +1,6 @@
 #include <cctype>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
 #include <stdio.h>
 #include <math.h>
@@ -13,6 +14,8 @@ const double EPS = 1e-9;
 
 const int COLOR_STR_MAX_LEN = 100;
 const char* CONSOLE_RESET = "\033[0m\033[K";
+
+const int COEFF_CNT = 3;
 
 enum ConsoleColors{
 	NO_COLOR = -1,
@@ -28,14 +31,14 @@ enum ConsoleColors{
 
 void ColoredPrintf(enum ConsoleColors text_color, enum ConsoleColors bg_color, const char* fmt, ...){
 	char res_color[COLOR_STR_MAX_LEN];
+	if (text_color != NO_COLOR && bg_color != NO_COLOR) {
+		snprintf(res_color, COLOR_STR_MAX_LEN, "\033[3%d;4%dm", text_color, bg_color);
+	}
 	if (text_color == NO_COLOR){
 		snprintf(res_color, COLOR_STR_MAX_LEN, "\033[4%dm", bg_color);
 	}
 	if (bg_color == NO_COLOR){
 		snprintf(res_color, COLOR_STR_MAX_LEN, "\033[3%dm", text_color);
-	}
-	if (text_color != NO_COLOR && bg_color != NO_COLOR) {
-		snprintf(res_color, COLOR_STR_MAX_LEN, "\033[3%d;4%dm", text_color, bg_color);
 	}
 	printf("%s", res_color);
 	va_list args;
@@ -67,37 +70,34 @@ enum EquationRootsNumber{
 };
 
 /**
- * @param [in] coeff_of_x coefficient of x
- * @param [in] free_coeff free coefficient
+ * @param [in] coeff Array of equation coefficients
  * @param [out] root Pointer to the root
  * @return Number of roots
  * @note In case of infinit number of roots returns INF_ROOTS
 */
 
-int SolveLinear(double coeff_of_x, double free_coeff, double* root){
-	if (IsZero(coeff_of_x)){
-		return (IsZero(free_coeff)) ? INF_ROOTS : 0;
+int SolveLinear(double* coeff, double* root){
+	if (IsZero(coeff[1])){
+		return (IsZero(coeff[0])) ? INF_ROOTS : 0;
 	}
 	else{
-		*root = -free_coeff/coeff_of_x;
+		*root = -coeff[0]/coeff[1];
 		return 1;
 	}
 }
 
 /**
- * @param [in] coeff_of_square_x coefficient of x^2
- * @param [in] coeff_of_x coefficient of x
- * @param [in] free_coeff free coefficeint
+ * @param [in] coeff Array of equation coefficients
  * @param [out] root1 Pointer to first root
  * @param [out] root2 Pointer to second root
  * @return Number of roots
  * @note In case of infinit number of roots returns INF_ROOTS
 */
 
-int SolveQuadratic(double coeff_of_square_x, double coeff_of_x, double free_coeff, double* root1, double* root2){
-	double d = coeff_of_x*coeff_of_x - 4*coeff_of_square_x*free_coeff;
+int SolveQuadratic(double* coeff, double* root1, double* root2){
+	double d = coeff[1]*coeff[1] - 4*coeff[2]*coeff[0];
 	if (IsZero(d)){
-		*root1 = -coeff_of_x / (2*coeff_of_square_x);
+		*root1 = -coeff[1] / (2*coeff[2]);
 		return ONE_ROOT;
 	}
 	else if (d < 0){
@@ -105,24 +105,25 @@ int SolveQuadratic(double coeff_of_square_x, double coeff_of_x, double free_coef
 	}
 	else{
 		double sqrt_d = sqrt(d);
-		*root1 = (-coeff_of_x + sqrt_d) / (2 * coeff_of_square_x);
-		*root2 = (-coeff_of_x - sqrt_d) / (2 * coeff_of_square_x);
+		*root1 = (-coeff[1] + sqrt_d) / (2 * coeff[2]);
+		*root2 = (-coeff[1] - sqrt_d) / (2 * coeff[2]);
 		return TWO_ROOTS;
 	}
 }
 
 
-int SolveEquation(double coeff_of_square_x, double coeff_of_x, double free_coeff, double* root1, double* root2){
-	assert(isfinite(coeff_of_square_x));
-	assert(isfinite(coeff_of_x));
+int SolveEquation(double* coeff, size_t coeff_size, double* root1, double* root2){
+	assert(isfinite(coeff[2]));
+	assert(isfinite(coeff[1]));
 	assert(root1 != NULL);
 	assert(root2 != NULL);
 	assert(root1 != root2);
+	assert(coeff_size >= COEFF_CNT);
 
-	if (!IsZero(coeff_of_square_x)){
-		return SolveQuadratic(coeff_of_square_x, coeff_of_x, free_coeff, root1, root2);
+	if (!IsZero(coeff[2])){
+		return SolveQuadratic(coeff, root1, root2);
 	}else{
-		return SolveLinear(coeff_of_x, free_coeff, root1);
+		return SolveLinear(coeff, root1);
 	}
 }
 
@@ -142,17 +143,15 @@ void ClearStdinBuffer(){
 	while ((c = getchar()) != '\n' && c != EOF);
 }
 
-enum InputStatus EnterCoefficients(double* a, double* b, double* c){
-	assert(a != NULL);
-	assert(b != NULL);
-	assert(c != NULL);
+enum InputStatus EnterCoefficients(double* coeff){
+	assert(coeff != NULL);
 
 	char sep1 = 0, sep2 = 0, sep3 = 0;
-	int argument_cnt = scanf("%lf%c%lf%c%lf%c", a, &sep1, b, &sep2, c, &sep3);
+	int argument_cnt = scanf("%lf%c%lf%c%lf%c", &coeff[2], &sep1, &coeff[1], &sep2, &coeff[0], &sep3);
 	if (argument_cnt != 6 || sep1 != ' ' || sep2 != ' ' || sep3 != '\n'){
 		return INVALID_STR;
 	}
-	if (!CheckDouble(*a) || !CheckDouble(*b) || !CheckDouble(*c)){
+	if (!CheckDouble(coeff[0]) || !CheckDouble(coeff[1]) || !CheckDouble(coeff[2])){
 		return INVALID_NUM;
 	}
 	return VALID_INPUT;
@@ -191,35 +190,36 @@ void ProcessFlags(int argc, char* argv[], int* digits_after_point){
 }
 
 void Greeting(){
-	ColoredPrintf(CYAN, BLACK, "Quadratic Equation Solver\n ax\u00B2 + bx + c = 0\n"); //\u00B2 - unicode ² symbol
+	ColoredPrintf(CYAN, BLACK, "Quadratic Equation Solver\n ax\u00B2 + bx + c = 0"); //\u00B2 - unicode ² symbol
 }
 
-void RequestCoefficients(double* a, double* b, double* c, int digits_after_point){
-	printf("Enter coefficients: ");
-	enum InputStatus input_result = EnterCoefficients(a, b, c);
+void RequestCoefficients(double* coeff, size_t coeff_size, int digits_after_point){
+	assert(coeff_size >= COEFF_CNT);
+
+	printf("\nEnter coefficients: ");
+	enum InputStatus input_result = EnterCoefficients(coeff);
 	while (input_result != VALID_INPUT){
 		if (input_result == INVALID_NUM){
-			ColoredPrintf(RED, BLACK, "Invalid numbers. Don't use nan or inf\n");
+			ColoredPrintf(RED, NO_COLOR, "Invalid numbers. Don't use nan or inf\n");
 			printf("Enter coefficients: ");
 		}else if(input_result == INVALID_STR){
-			ColoredPrintf(RED, BLACK, "Invalid input. Please enter 3 numbers separated by space\n");
+			ColoredPrintf(RED, NO_COLOR, "Invalid input. Please enter 3 numbers separated by space\n");
 			printf("Enter coefficients: ");
 			ClearStdinBuffer();
 		}else{
 			printf("Please try again.\n");
 		}
-		input_result = EnterCoefficients(a, b, c);
+		input_result = EnterCoefficients(coeff);
 	}
 
 	ColoredPrintf(GREEN, BLACK, "You entered %.*lfx\u00B2 %c %.*lfx %c %.*lf = 0 equation.\n", 
-		                     digits_after_point,      *a, 
-		(*b>=0) ? '+' : '-', digits_after_point, fabs(*b), 
-		(*c>=0) ? '+' : '-', digits_after_point, fabs(*c)
+		                     digits_after_point,      coeff[2], 
+		(coeff[1]>=0) ? '+' : '-', digits_after_point, fabs(coeff[1]), 
+		(coeff[0]>=0) ? '+' : '-', digits_after_point, fabs(coeff[0])
 		); 
 }
 
 int main(int argc, char* argv[]){
-	double a = 0., b = 0., c = 0.;
 
 	int digits_after_point = 2;
 	
@@ -227,10 +227,12 @@ int main(int argc, char* argv[]){
 
 	Greeting();
 
-	RequestCoefficients(&a, &b, &c, digits_after_point);
+	double coeffs[COEFF_CNT] = {0., 0., 0.};
+
+	RequestCoefficients(coeffs, COEFF_CNT, digits_after_point);
 
 	double x1 = 0., x2 = 0.;
-	int nRoots = SolveEquation(a, b, c, &x1, &x2);
+	int nRoots = SolveEquation(coeffs, COEFF_CNT, &x1, &x2);
 
 	PrintRoots(nRoots, x1, x2, digits_after_point);
 
