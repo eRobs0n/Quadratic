@@ -1,3 +1,5 @@
+#define _DEBUG_
+
 #include <cctype>
 #include <cmath>
 #include <cstddef>
@@ -8,6 +10,7 @@
 #include <stdlib.h> 
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include <stdarg.h>
 
 const double EPS = 1e-9;
@@ -16,7 +19,7 @@ const int COLOR_STR_MAX_LEN = 100;
 const char* CONSOLE_RESET = "\033[0m\033[K";
 
 const int DEFAULT_ACCURACY = 2;
-const int DEFAULT_TEST_COUNT = 10;
+const int DEFAULT_TEST_COUNT = 100;
 const bool DEFAULT_NEED_TEST = false;
 
 const int RND_TEST_UPPER = 10;
@@ -24,21 +27,21 @@ const int RND_TEST_LOWER = -10;
 
 enum ConsoleColors{
 	NO_COLOR = -1,
-	BLACK,
-	RED,
-	GREEN,
-	YELLOW,
-	BLUE,
-	MAGENTA,
-	CYAN,
-	WHITE
+	BLACK = 0,
+	RED = 1,
+	GREEN = 2,
+	YELLOW = 3,
+	BLUE = 4,
+	MAGENTA = 5,
+	CYAN = 6,
+	WHITE = 7
 };
 
 enum EquationSolutionsNumber{
-	NO_ROOTS,
-	ONE_ROOT,
-	TWO_ROOTS,
-	INF_ROOTS
+	INF_ROOTS = -1,
+	NO_ROOTS = 0,
+	ONE_ROOT = 1,
+	TWO_ROOTS = 2
 };
 
 enum InputStatus{
@@ -196,7 +199,6 @@ void PrintRoots(struct EquationSolutions roots, int accuracy){
 			printf("Something went wrong...\n");
 			break;
 	}
-	
 }
 
 int ProcessFlags(int argc, char* argv[], int* accuracy, bool* need_test){
@@ -237,8 +239,8 @@ enum InputStatus EnterCoefficients(struct EquationCoeffs* coeffs){
 	assert(coeffs != NULL);
 
 	char sep1 = 0, sep2 = 0, sep3 = 0; // TODO: maybe fix
-	int argument_cnt = scanf("%lf%c%lf%c%lf%c", &coeffs->coeff_of_sq_x, &sep1, &coeffs->coeff_of_x, &sep2, &coeffs->free_coeff, &sep3);
-	if (argument_cnt != 6 || sep1 != ' ' || sep2 != ' ' || sep3 != '\n'){
+	int argument_cnt = scanf("%lf%c %lf%c %lf%c", &coeffs->coeff_of_sq_x, &sep1, &coeffs->coeff_of_x, &sep2, &coeffs->free_coeff, &sep3);
+	if (argument_cnt != 6 || !isspace(sep1) || !isspace(sep2) || sep3 != '\n'){
 		return INVALID_STR;
 	}
 	if (!CheckDouble(coeffs->free_coeff) || !CheckDouble(coeffs->coeff_of_x) || !CheckDouble(coeffs->coeff_of_sq_x)){
@@ -284,15 +286,16 @@ TestStatus TestSolver(struct EquationCoeffs coeffs, struct EquationSolutions roo
 }
 
 int GetRandInBounds(int lower, int upper){
-	return lower + rand() % (upper - lower + 1);
+	return lower + (rand() % (upper - lower + 1));
 }
 
 struct EquationCoeffs GetCoeffsBySolution(struct EquationSolutions test_res){
 	struct EquationCoeffs test_coeffs;
 	int multiplier = GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
-	test_coeffs.coeff_of_sq_x = multiplier;
-	test_coeffs.coeff_of_x = -(test_res.root1 + test_res.root2) * multiplier;
-	test_coeffs.free_coeff = multiplier * test_res.root1 * test_res.root2;
+	while (multiplier == 0) multiplier = GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
+	test_coeffs.coeff_of_sq_x = (double) multiplier;
+	test_coeffs.coeff_of_x = -(test_res.root1 + test_res.root2) * (double) multiplier;
+	test_coeffs.free_coeff = (double) multiplier * test_res.root1 * test_res.root2;
 	return test_coeffs;
 }
 
@@ -303,10 +306,10 @@ void GenTests(size_t test_cnt, struct EquationCoeffs* test_coeffs, struct Equati
 	for (size_t i = 0; i < test_cnt; i++){
 		test_res[i].nRoots = TWO_ROOTS;
 
-		while (Equals(test_res[i].root1, test_res[i].root2)){
-			test_res[i].root1 = GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
-			test_res[i].root2 = GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
-		}
+		do{
+			test_res[i].root1 = (double) GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
+			test_res[i].root2 = (double) GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
+		}while (Equals(test_res[i].root1, test_res[i].root2));
 
 		test_coeffs[i] = GetCoeffsBySolution(test_res[i]);
 		
@@ -317,11 +320,26 @@ void RunTests(size_t test_cnt, struct EquationCoeffs test_coeffs[], struct Equat
 	for (size_t i = 0; i < test_cnt; i++){
 		struct EquationSolutions result;
 		if (TestSolver(test_coeffs[i], test_res[i], &result) == TEST_FAILED) PrintTestError(test_coeffs[i], test_res[i], result);
-		else ColoredPrintf(GREEN, BLACK, "Test %d passed.\n", i+1);
 	}
 }
 
+void SetupRandom(){
+	srand(time(0));
+}
+
+void TestAll(){
+	struct EquationCoeffs test_coeffs[DEFAULT_TEST_COUNT];
+	struct EquationSolutions test_res[DEFAULT_TEST_COUNT];
+	for(int i = 0; i<DEFAULT_TEST_COUNT; i++){
+		test_coeffs[i] = {0. ,0. ,0.};
+		test_res[i] = {0. ,0. ,NO_ROOTS};
+	}
+	GenTests(DEFAULT_TEST_COUNT, test_coeffs, test_res);
+	RunTests(DEFAULT_TEST_COUNT, test_coeffs, test_res);
+}
+
 int main(int argc, char* argv[]){
+	//SetupRandom();
 
 	int accuracy = DEFAULT_ACCURACY;
 	bool need_test = DEFAULT_NEED_TEST;
@@ -329,10 +347,7 @@ int main(int argc, char* argv[]){
 	ProcessFlags(argc, argv, &accuracy, &need_test);
 
 	if (need_test){
-		struct EquationCoeffs test_coeffs[DEFAULT_TEST_COUNT];
-		struct EquationSolutions test_res[DEFAULT_TEST_COUNT];
-		GenTests(DEFAULT_TEST_COUNT, test_coeffs, test_res);
-		RunTests(DEFAULT_TEST_COUNT, test_coeffs, test_res);
+		TestAll();
 	}
 
 	Greeting();
