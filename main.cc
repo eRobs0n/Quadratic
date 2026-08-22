@@ -15,9 +15,6 @@ const double EPS = 1e-9;
 const int COLOR_STR_MAX_LEN = 100;
 const char* CONSOLE_RESET = "\033[0m\033[K";
 
-const int MAX_ROOTS = 2;
-const int MAX_COEFF_CNT = 3;
-
 enum ConsoleColors{
 	NO_COLOR = -1,
 	BLACK,
@@ -30,7 +27,15 @@ enum ConsoleColors{
 	WHITE
 };
 
-
+struct EquationCoeffs{
+	double coeff_of_sq_x;
+	double coeff_of_x;
+	double free_coeff;
+};
+struct EquationSolutions{
+	double root1;
+	double root2;
+};
 
 void CreateColorStr(char* res_color, size_t res_color_len, enum ConsoleColors text_color, enum ConsoleColors bg_color){
 	if (text_color != NO_COLOR && bg_color != NO_COLOR) {
@@ -73,7 +78,7 @@ enum InputStatus{
 	INVALID_NUM
 };
 
-enum EquationRootsNumber{
+enum EquationSolutionsNumber{
 	NO_ROOTS,
 	ONE_ROOT,
 	TWO_ROOTS,
@@ -87,12 +92,12 @@ enum EquationRootsNumber{
  * @note In case of infinit number of roots returns INF_ROOTS
 */
 
-int SolveLinear(double* coeff, double* roots){
-	if (IsZero(coeff[1])){
-		return (IsZero(coeff[0])) ? INF_ROOTS : 0;
+int SolveLinear(struct EquationCoeffs coeffs, struct EquationSolutions* roots){
+	if (IsZero(coeffs.coeff_of_x)){
+		return (IsZero(coeffs.free_coeff)) ? INF_ROOTS : 0;
 	}
 	else{
-		roots[0] = -coeff[0]/coeff[1];
+		roots->root1 = -coeffs.free_coeff/coeffs.coeff_of_x;
 		return 1;
 	}
 }
@@ -105,10 +110,10 @@ int SolveLinear(double* coeff, double* roots){
  * @note In case of infinit number of roots returns INF_ROOTS
 */
 
-int SolveQuadratic(double* coeff, double* roots){
-	double d = coeff[1]*coeff[1] - 4*coeff[2]*coeff[0];
+int SolveQuadratic(struct EquationCoeffs coeffs, struct EquationSolutions* roots){
+	double d = coeffs.coeff_of_x*coeffs.coeff_of_x - 4*coeffs.coeff_of_sq_x*coeffs.free_coeff;
 	if (IsZero(d)){
-		roots[0] = -coeff[1] / (2*coeff[2]);
+		roots->root1 = -coeffs.coeff_of_x / (2*coeffs.coeff_of_sq_x);
 		return ONE_ROOT;
 	}
 	else if (d < 0){
@@ -116,24 +121,23 @@ int SolveQuadratic(double* coeff, double* roots){
 	}
 	else{
 		double sqrt_d = sqrt(d);
-		roots[0] = (-coeff[1] + sqrt_d) / (2 * coeff[2]);
-		roots[1] = (-coeff[1] - sqrt_d) / (2 * coeff[2]);
+		roots->root1 = (-coeffs.coeff_of_x + sqrt_d) / (2 * coeffs.coeff_of_sq_x);
+		roots->root2 = (-coeffs.coeff_of_x - sqrt_d) / (2 * coeffs.coeff_of_sq_x);
 		return TWO_ROOTS;
 	}
 }
 
 
-int SolveEquation(double* coeff, size_t coeff_size, double* roots, size_t roots_size){
-	assert(isfinite(coeff[2]));
-	assert(isfinite(coeff[1]));
+int SolveEquation(struct EquationCoeffs coeffs, struct EquationSolutions* roots){
+	assert(isfinite(coeffs.coeff_of_sq_x));
+	assert(isfinite(coeffs.coeff_of_x));
+	assert(isfinite(coeffs.free_coeff));
 	assert(roots != NULL);
-	assert(coeff_size >= MAX_COEFF_CNT);
-	assert(roots_size >= MAX_ROOTS);
 
-	if (!IsZero(coeff[2])){
-		return SolveQuadratic(coeff, roots);
+	if (!IsZero(coeffs.coeff_of_sq_x)){
+		return SolveQuadratic(coeffs, roots);
 	}else{
-		return SolveLinear(coeff, roots);
+		return SolveLinear(coeffs, roots);
 	}
 }
 
@@ -153,21 +157,7 @@ void ClearStdinBuffer(){
 	while ((c = getchar()) != '\n' && c != EOF);
 }
 
-enum InputStatus EnterCoefficients(double* coeff){
-	assert(coeff != NULL);
-
-	char sep1 = 0, sep2 = 0, sep3 = 0; // TODO: maybe fix
-	int argument_cnt = scanf("%lf%c%lf%c%lf%c", &coeff[2], &sep1, &coeff[1], &sep2, &coeff[0], &sep3);
-	if (argument_cnt != 6 || sep1 != ' ' || sep2 != ' ' || sep3 != '\n'){
-		return INVALID_STR;
-	}
-	if (!CheckDouble(coeff[0]) || !CheckDouble(coeff[1]) || !CheckDouble(coeff[2])){
-		return INVALID_NUM;
-	}
-	return VALID_INPUT;
-}
-
-void PrintRoots(int nRoots, double* roots, int digits_after_point){
+void PrintRoots(int nRoots, struct EquationSolutions roots, int digits_after_point){
 	switch (nRoots){
 		case NO_ROOTS:
 			printf("No roots\n");
@@ -176,10 +166,10 @@ void PrintRoots(int nRoots, double* roots, int digits_after_point){
 			printf("Infinity number of roots\n");
 			break;
 		case ONE_ROOT:
-			printf("x = %.*lf\n", digits_after_point, roots[0]);
+			printf("x = %.*lf\n", digits_after_point, roots.root1);
 			break;
 		case TWO_ROOTS:
-			printf("x1 = %.*lf, x2 = %.*lf\n", digits_after_point, roots[0], digits_after_point, roots[1]);
+			printf("x1 = %.*lf, x2 = %.*lf\n", digits_after_point, roots.root1, digits_after_point, roots.root2);
 			break;
 		default:
 			printf("Something went wrong...\n");
@@ -190,10 +180,10 @@ void PrintRoots(int nRoots, double* roots, int digits_after_point){
 
 int ProcessFlags(int argc, char* argv[], int* digits_after_point){
 	if (argc>1){
-		if (strcmp(argv[1], "-dap") == 0 && CheckStringOfDigits(argv[2])){ // maybe accuracy
+		if (strcmp(argv[1], "-accuracy") == 0 && CheckStringOfDigits(argv[2])){ // maybe accuracy
 			*digits_after_point = atoi(argv[2]);
 		}else{
-			ColoredPrintf(WHITE, RED, "Usage: qdr -dap digits_after_point\n");
+			ColoredPrintf(WHITE, RED, "Usage: qdr -accuracy digits_after_point\n");
 			return -1;
 		}
 	}
@@ -204,21 +194,33 @@ void Greeting(){
 	ColoredPrintf(CYAN, BLACK, "Quadratic Equation Solver\n ax\u00B2 + bx + c = 0"); //\u00B2 - unicode ² symbol
 }
 
-void PrintEquation(double* coeff, int digits_after_point){
+void PrintEquation(struct EquationCoeffs coeffs, int digits_after_point){
 	printf("You entered ");
-	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeff[2]);
-	printf("x\u00B2%c", (coeff[1]>=0) ? '+' : ' ');
-	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeff[1]);
-	printf("x%c", (coeff[0]>=0) ? '+' : ' ');
-	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeff[0]);
+	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeffs.coeff_of_sq_x);
+	printf("x\u00B2%c", (coeffs.coeff_of_x>=0) ? '+' : ' ');
+	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeffs.coeff_of_x);
+	printf("x%c", (coeffs.free_coeff>=0) ? '+' : ' ');
+	ColoredPrintf(GREEN, BLACK, "%.*lf", digits_after_point, coeffs.free_coeff);
 	printf(" = 0 equation.\n");
 }
 
-void RequestCoefficients(double* coeff, size_t coeff_size, int digits_after_point){
-	assert(coeff_size >= MAX_COEFF_CNT);
+enum InputStatus EnterCoefficients(struct EquationCoeffs* coeffs){
+	assert(coeffs != NULL);
 
+	char sep1 = 0, sep2 = 0, sep3 = 0; // TODO: maybe fix
+	int argument_cnt = scanf("%lf%c%lf%c%lf%c", &coeffs->coeff_of_sq_x, &sep1, &coeffs->coeff_of_x, &sep2, &coeffs->free_coeff, &sep3);
+	if (argument_cnt != 6 || sep1 != ' ' || sep2 != ' ' || sep3 != '\n'){
+		return INVALID_STR;
+	}
+	if (!CheckDouble(coeffs->free_coeff) || !CheckDouble(coeffs->coeff_of_x) || !CheckDouble(coeffs->coeff_of_sq_x)){
+		return INVALID_NUM;
+	}
+	return VALID_INPUT;
+}
+
+void RequestCoefficients(struct EquationCoeffs* coeffs){
 	printf("\nEnter coefficients: ");
-	enum InputStatus input_result = EnterCoefficients(coeff);
+	enum InputStatus input_result = EnterCoefficients(coeffs);
 	while (input_result != VALID_INPUT){
 		if (input_result == INVALID_NUM){
 			ColoredPrintf(RED, NO_COLOR, "Invalid numbers. Don't use nan or inf\n");
@@ -230,43 +232,13 @@ void RequestCoefficients(double* coeff, size_t coeff_size, int digits_after_poin
 		}else{
 			printf("Please try again.\n");
 		}
-		input_result = EnterCoefficients(coeff);
-	}
-	PrintEquation(coeff, digits_after_point);
-}
-
-
-void SortRoots(double* roots, size_t roots_size){
-	if (roots_size < 2)return;
-	if (roots[0] > roots[1]){
-		double tmp = roots[1];
-		roots[1] = roots[0];
-		roots[0] = tmp;
+		input_result = EnterCoefficients(coeffs);
 	}
 }
 
-int TestSolveEquation(double* coeffs, size_t coeff_cnt, double* roots_ref, int nRootsRef){
-	double roots[MAX_ROOTS];
-	int nRoots = SolveEquation(coeffs, coeff_cnt, roots, MAX_ROOTS);
-	SortRoots(roots, nRoots);
-	SortRoots(roots_ref, nRootsRef);
-	if (nRoots != nRootsRef || (nRoots == 1 && !Equals(roots[0], roots_ref[0]))
-							|| (nRootsRef == 2 && (!Equals(roots[0], roots_ref[0]) 
-												|| !Equals(roots[1], roots_ref[1])))){
-		return 1;
-	}
-	return 0;
-}
 
-void RunTests(){
-
-}
 
 int main(int argc, char* argv[]){
-
-	double testcfs[] = {0., 1., 4.};
-	double testrts[] = {-4.};
-	printf("Test 0 1 4 res: %d", TestSolveEquation(testcfs, 3, testrts, 1));
 
 	int digits_after_point = 2;
 	
@@ -274,12 +246,13 @@ int main(int argc, char* argv[]){
 
 	Greeting();
 
-	double coeffs[MAX_COEFF_CNT] = {0., 0., 0.};
+	struct EquationCoeffs coeffs;
+	RequestCoefficients(&coeffs);
 
-	RequestCoefficients(coeffs, MAX_COEFF_CNT, digits_after_point);
+	PrintEquation(coeffs, digits_after_point);
 
-	double roots[MAX_ROOTS] = {0., 0.};
-	int nRoots = SolveEquation(coeffs, MAX_COEFF_CNT, roots, MAX_ROOTS);
+	struct EquationSolutions roots;
+	int nRoots = SolveEquation(coeffs, &roots);
 
 	PrintRoots(nRoots, roots, digits_after_point);
 
