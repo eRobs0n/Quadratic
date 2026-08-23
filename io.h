@@ -6,6 +6,8 @@
 
 const int DEFAULT_ACCURACY = 2;
 const int COLOR_STR_MAX_LEN = 100;
+const int MAX_EXPRESSION_LENGTH = 200;
+const int MAX_TERM_LENGTH = 100;
 const char* const _CONSOLE_RESET = "\033[0m\033[K";
 
 enum ConsoleColors{
@@ -32,7 +34,12 @@ enum YesNoInputStatus{
 	YES_ANS
 };
 
-
+enum TermCoefficient{
+	INVALID_TERM  = -1,
+	CONSTANT_TERM =  0,
+	LINEAR_TERM   =  1,
+	LEADING_TERM  =  2
+};
 
 /**
  * Creates special string for console colored output
@@ -83,12 +90,28 @@ enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs);
 */
 void RequestCoefficients(struct EquationCoeffs* coeffs);
 
-//!Request Yes or No (y/n) from console
+//! Remove all c characters in s[] string
+void StrSqueeze(char s[], int c);
+
+//! Request Yes or No (y/n) from console
 YesNoInputStatus YesNoInput();
+
+//! TODO docs
+char* SepByTerms(char* str, char* term, size_t max_term_length);
+
+//! TODO docs
+void RequestExpression(struct EquationCoeffs* coeffs);
+
+//! TODO
+enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs);
+
+//! TODO
+enum TermCoefficient _ProcessTerm(char* t, double* coeff);
 
 //! Funny AI trolling greeting
 void InterractiveAiGrreting();
 
 //! Funny AI trolloing goodby
 void InterractiveAiGoodbye();
+
 #endif /*__IO__*/

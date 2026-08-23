@@ -17,6 +17,21 @@ void RunInteractiveMode(int accuracy){
 	PrintRoots(&roots, accuracy);
 }
 
+void RunExpressionMode(int accuracy){
+	Greeting();
+	
+	struct EquationCoeffs coeffs;
+	RequestExpression(&coeffs);
+
+	PrintEquation(&coeffs, accuracy);
+
+	struct EquationSolutions roots;
+	SolveEquation(&coeffs, &roots);
+
+	PrintRoots(&roots, accuracy);
+}
+
+ // TODO
 void RunAiMode(){
 	InterractiveAiGrreting();
 
@@ -24,7 +39,7 @@ void RunAiMode(){
 	if (ans == NO_ANS){
 		InterractiveAiGoodbye();
 	}
-	
+
 }
 
 int main(int argc, char* argv[]){
@@ -38,7 +53,7 @@ int main(int argc, char* argv[]){
 	if (need_test){
 		TestAll();
 	} else {
-		RunInteractiveMode(accuracy);
+		RunExpressionMode(accuracy);
 	}
 	
 	return 0;
