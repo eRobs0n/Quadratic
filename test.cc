@@ -4,6 +4,23 @@
 #include <assert.h>
 #include <time.h>
 #include "io.h"
+#include "solver.h"
+#include "stdio.h"
+
+const int SPEC_TESTS_COUNT = 4;
+const EquationCoeffs spec_tests_coeffs[] = {
+	{0, 0, 0},
+	{0, 4, -8},
+	{1, 0, -4},
+	{0, 0, 1}
+};
+
+const EquationSolutions spec_tests_solutions[] = {
+	{0, 0, INF_ROOTS},
+	{0, 2, ONE_ROOT},
+	{2, -2, TWO_ROOTS},
+	{0, 0, NO_ROOTS}
+};
 
 int GetRandInBounds(int lower, int upper){
 	return lower + (rand() % (upper - lower + 1));
@@ -36,6 +53,9 @@ void GenSolverTests(size_t test_cnt, struct EquationCoeffs* test_coeffs, struct 
 		test_coeffs[i] = GetCoeffsBySolution(&test_res[i]);
 		
 	}
+
+
+
 }
 
 void RunSolverTests(size_t test_cnt, const struct EquationCoeffs test_coeffs[], const struct EquationSolutions test_res[]){
@@ -67,6 +87,7 @@ void PrintTestError(const struct EquationCoeffs* coeffs, const struct EquationSo
 }
 
 void TestAll(){
+	printf("Testing group 1 - random tests:\n");
 	struct EquationCoeffs test_coeffs[DEFAULT_TEST_COUNT];
 	struct EquationSolutions test_res[DEFAULT_TEST_COUNT];
 	for(int i = 0; i<DEFAULT_TEST_COUNT; i++){
@@ -75,6 +96,9 @@ void TestAll(){
 	}
 	GenSolverTests(DEFAULT_TEST_COUNT, test_coeffs, test_res);
 	RunSolverTests(DEFAULT_TEST_COUNT, test_coeffs, test_res);
+
+	printf("Testing group 2 - specific tests:\n");
+	RunSolverTests(SPEC_TESTS_COUNT, spec_tests_coeffs, spec_tests_solutions);
 }
 
 struct EquationCoeffs GetCoeffsBySolution(const struct EquationSolutions* test_res){

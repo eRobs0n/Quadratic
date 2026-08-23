@@ -1,4 +1,5 @@
 #include "io.h"
+#include <cctype>
 #include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
@@ -124,4 +125,37 @@ void RequestCoefficients(struct EquationCoeffs* coeffs){
 	}
 }
 
+YesNoInputStatus YesNoInput(){
+	char c = 0;
+	scanf("%c", &c);
+	c = tolower(c);
+	if (c == 'y'){
+		return YES_ANS;
+	}else if(c == 'n'){
+		return NO_ANS;
+	}
+	return INVALID_ANS;
+}
 
+const char* const _funnyAiGreeting = R"(
+🧠✨ Уважаемый пользователь.
+
+Перед вами не просто квадратное уравнение.
+
+Перед вами — **возможность**.
+
+**x² − 4x + 3 = 0**
+
+Два корня.
+Один дискриминант.
+Бесконечное количество способов сказать, что это сделала нейросеть.
+
+Желаете ли вы позволить **ARTIFICIAL INTELLIGENCE™** раскрыть тайну переменной X?
+
+**Y — узнать истину**
+**N — сохранить тайну**
+)";
+
+void InterractiveAiGrreting(){
+	ColoredPrintf(MAGENTA, BLACK, _funnyAiGreeting);
+}

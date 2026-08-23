@@ -5,7 +5,7 @@
 
 void RunInteractiveMode(int accuracy){
 	Greeting();
-
+	
 	struct EquationCoeffs coeffs;
 	RequestCoefficients(&coeffs);
 
@@ -15,6 +15,16 @@ void RunInteractiveMode(int accuracy){
 	SolveEquation(&coeffs, &roots);
 
 	PrintRoots(&roots, accuracy);
+}
+
+void RunAiMode(){
+	InterractiveAiGrreting();
+
+	YesNoInputStatus ans = YesNoInput();
+	if (ans == NO_ANS){
+		InterractiveAiGoodbye();
+	}
+	
 }
 
 int main(int argc, char* argv[]){

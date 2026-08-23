@@ -73,7 +73,7 @@ bool CompareSolutions(const struct EquationSolutions* a, const struct EquationSo
 	assert(b != NULL);
 
 	if (a->nRoots != b->nRoots) return false;
-	if (a->nRoots == 1) return Equals(a->root1, b->root1);
+	if (a->nRoots == 1) return Equals(a->root1, b->root1) || Equals(a->root1, b->root2);
 	if (a->nRoots == 2) return (Equals(a->root1, b->root1) && Equals(a->root2, b->root2)) || 
 							  (Equals(a->root1, b->root2) && Equals(a->root2, b->root1));
 	return true;

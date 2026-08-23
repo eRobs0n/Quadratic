@@ -26,6 +26,14 @@ enum InputStatus{
 	INVALID_NUM
 };
 
+enum YesNoInputStatus{
+	INVALID_ANS,
+	NO_ANS,
+	YES_ANS
+};
+
+
+
 /**
  * Creates special string for console colored output
  * @param [out] res_color 
@@ -75,4 +83,12 @@ enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs);
 */
 void RequestCoefficients(struct EquationCoeffs* coeffs);
 
+//!Request Yes or No (y/n) from console
+YesNoInputStatus YesNoInput();
+
+//! Funny AI trolling greeting
+void InterractiveAiGrreting();
+
+//! Funny AI trolloing goodby
+void InterractiveAiGoodbye();
 #endif /*__IO__*/

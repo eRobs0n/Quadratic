@@ -1,7 +1,7 @@
 #include "d_math.h"
 
 bool CheckDouble(double d){
-	return !isnan(d) && isfinite(d);
+	return isfinite(d);
 }
 
 bool Equals(double a, double b){

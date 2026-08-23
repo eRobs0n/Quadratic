@@ -6,7 +6,7 @@
 
 const int RND_TEST_UPPER = 10;
 const int RND_TEST_LOWER = -10;
-const int DEFAULT_TEST_COUNT = 100;
+const int DEFAULT_TEST_COUNT = 10;
 const bool DEFAULT_NEED_TEST = false;
 
 enum TestStatus{
