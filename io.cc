@@ -1,4 +1,5 @@
 #include "io.h"
+#include "parser.h"
 #include <cctype>
 #include <stdio.h>
 #include <stdarg.h>
@@ -6,33 +7,16 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#include "common.h"
 #include "d_math.h"
+#include "parser.h"
 #include "solver.h"
-
-const char* _LEADING_VAR_STRINGS[] = {
-	"x^2", 
-	"x*x",
-	"x**2",
-	"*x^2", 
-	"*x*x",
-	"*x**2"
-};
-
-const char* _LINEAR_VAR_STRINGS[] = {
-	"x",
-	"*x"
-};
 
 
 void _PrintInvalidInputMessage(enum InputStatus input_result){
 	if (input_result == INVALID_NUM){
 			ColoredPrintf(RED, NO_COLOR, "Invalid numbers. Don't use nan or inf\n");
-			printf("Enter coefficients: ");
 		}else if(input_result == INVALID_STR){
-			ColoredPrintf(RED, NO_COLOR, "Invalid input. Please enter 3 numbers separated by space\n");
-			printf("Enter coefficients: ");
-			ClearStdinBuffer();
+			ColoredPrintf(RED, NO_COLOR, "Invalid input. Try again\n");
 		}else{
 			printf("Please try again.\n");
 	}
@@ -128,6 +112,7 @@ enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs){
 	char sep1 = 0, sep2 = 0, sep3 = 0; // TODO: maybe fix
 	int argument_cnt = scanf("%lf%c %lf%c %lf%c", &coeffs->coeff_of_sq_x, &sep1, &coeffs->coeff_of_x, &sep2, &coeffs->free_coeff, &sep3);
 	if (argument_cnt != 6 || !isspace(sep1) || !isspace(sep2) || sep3 != '\n'){
+		ClearStdinBuffer();
 		return INVALID_STR;
 	}
 	if (!CheckDouble(coeffs->free_coeff) || !CheckDouble(coeffs->coeff_of_x) || !CheckDouble(coeffs->coeff_of_sq_x)){
@@ -157,22 +142,6 @@ void StrSqueeze(char s[], int c){
    s[j] = '\0';
 }
 
-char* SepByTerms(char* str, char* term, size_t max_term_length){
-   if (*str == '\0') return NULL;
-   char c;
-   int pos = 0;
-   while ((c = *str) != '\0'){
-      if (pos!=0 && (c == '+' || c == '-')){
-         return str;
-      }
-      if (pos>=max_term_length) return NULL;
-      term[pos] = c;
-      pos+=1;
-      str++;
-   }
-   return str;
-}
-
 
 void RequestCoefficients(struct EquationCoeffs* coeffs){
 	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
@@ -181,11 +150,11 @@ void RequestCoefficients(struct EquationCoeffs* coeffs){
 	enum InputStatus input_result = _EnterCoefficients(coeffs);
 	while (input_result != VALID_INPUT){
 		_PrintInvalidInputMessage(input_result);
+		printf("Enter coefficients: ");
 		input_result = _EnterCoefficients(coeffs);
 	}
 }
 
-//TODO перенести в RequestCoefficients
 void RequestExpression(struct EquationCoeffs* coeffs){
 	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
 
@@ -195,11 +164,13 @@ void RequestExpression(struct EquationCoeffs* coeffs){
 
 	while (input_result != VALID_INPUT){
 		_PrintInvalidInputMessage(input_result);
+		printf("Enter expression like a*x^2 + b*x + c: ");
 		input_result = _EnterExpression(coeffs);
 	}
 
 }
 
+//! Internal function for enter expression from stdin
 enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs){
 	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
 
@@ -220,103 +191,21 @@ enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs){
 		printf("After reoving whitespaces expression is %s\n", res);
 	#endif
 
-	char* token_ptr = expr;
-	char term[MAX_TERM_LENGTH] = {0};
-	int terms_cnt = 0;
+	enum ParsingStatus parsing_result = ParseExpression(expr, coeffs);
 
-	struct EquationCoeffs calc_coeffs = 
-		{.coeff_of_sq_x = 0., .coeff_of_x = 0., .free_coeff = 0};
-
-	while ((token_ptr = SepByTerms(token_ptr, term, MAX_TERM_LENGTH)) != NULL){
-		#ifdef _DEBUG
-			printf("Separated term %s\n", term);
-		#endif
-
-		double pred_coeff = 0.;
-		enum TermCoefficient type = _ProcessTerm(term, &pred_coeff);
-
-		#ifdef _DEBUG
-			printf("Extracted coefficeint %lf\n", pred_coeff);
-		#endif
-
-		if (!CheckDouble(pred_coeff)){
-			return INVALID_NUM;
-		}
-
-		#ifdef _DEBUG
-			printf("Returned status: %d\n", type);
-		#endif
-
-		switch(type){
-		case INVALID_TERM:
-			return INVALID_STR;
-			break;
-		case CONSTANT_TERM:
-			calc_coeffs.free_coeff += pred_coeff;
-			break;
-		case LINEAR_TERM:
-			calc_coeffs.coeff_of_x += pred_coeff;
-			break;
-		case LEADING_TERM:
-			calc_coeffs.coeff_of_sq_x += pred_coeff;
-			break;
-		default:
-			assert(false);
-		}
-
-		memset(term, 0, MAX_TERM_LENGTH*sizeof(char));
+	if(parsing_result == PARSING_ERROR) {
+		return INVALID_STR;
 	}
 
-	*coeffs = calc_coeffs;
+	if (!CheckDouble(coeffs->coeff_of_sq_x) || 
+		 !CheckDouble(coeffs->coeff_of_x)    || 
+		 !CheckDouble(coeffs->free_coeff)){
+		*coeffs = {0, 0, 0};
+		return INVALID_NUM; 
+	}
 
 	return VALID_INPUT;
 }
-
-enum TermCoefficient _ProcessTerm(/*const*/ char* t, double* coeff){
-	#ifdef _DEBUG
-	printf("Runned _ProcessTerm with term %s and %p pointer to cf\n", t, coeff);
-	#endif
-
-	assert(t != NULL); //What?
-	assert(coeff != NULL);
-
-	double t_coeff = 0.;
-	// if (atof(t)){ // TODO Fix! Not working
-
-	// 	#ifdef _DEBUG
-	// 		printf("Converted double - %s %lf\n", t, atof(t));
-	// 	#endif
-
-	// 	sscanf(t, "%lf", &t_coeff);
-	// 	*coeff = t_coeff;
-	// 	return CONSTANT_TERM;
-	// }
-	char var[MAX_TERM_LENGTH];
-	sscanf(t, "%lf%s", &t_coeff, var);
-
-	if (strlen(var) == 0){
-		*coeff = t_coeff;
-		return CONSTANT_TERM;
-	}
-
-	for (int i = 0; i < ARR_LEN(_LEADING_VAR_STRINGS); i++){
-		if (strcmp(var, _LEADING_VAR_STRINGS[i]) == 0){
-			*coeff = t_coeff;
-			return LEADING_TERM;
-		}
-	}
-
-	for (int i = 0; i < ARR_LEN(_LINEAR_VAR_STRINGS); i++){
-		if (strcmp(var, _LINEAR_VAR_STRINGS[i]) == 0){
-			*coeff = t_coeff;
-			return LINEAR_TERM;
-		}
-	}
-
-	return INVALID_TERM;
-}
-
-
 
 
 

@@ -3,11 +3,11 @@
 
 #include <stddef.h>
 #include "solver.h"
+#include "parser.h"
 
 const int DEFAULT_ACCURACY = 2;
 const int COLOR_STR_MAX_LEN = 100;
-const int MAX_EXPRESSION_LENGTH = 200;
-const int MAX_TERM_LENGTH = 100;
+
 const char* const _CONSOLE_RESET = "\033[0m\033[K";
 
 enum ConsoleColors{
@@ -32,13 +32,6 @@ enum YesNoInputStatus{
 	INVALID_ANS,
 	NO_ANS,
 	YES_ANS
-};
-
-enum TermCoefficient{
-	INVALID_TERM  = -1,
-	CONSTANT_TERM =  0,
-	LINEAR_TERM   =  1,
-	LEADING_TERM  =  2
 };
 
 /**
@@ -82,6 +75,8 @@ void Greeting();
 */
 void PrintEquation(const struct EquationCoeffs* coeffs, int accuracy);
 
+
+//! Internal function for enter coefficients from stdin
 enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs);
 
 /**
@@ -90,23 +85,18 @@ enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs);
 */
 void RequestCoefficients(struct EquationCoeffs* coeffs);
 
-//! Remove all c characters in s[] string
-void StrSqueeze(char s[], int c);
-
 //! Request Yes or No (y/n) from console
 YesNoInputStatus YesNoInput();
 
-//! TODO docs
-char* SepByTerms(char* str, char* term, size_t max_term_length);
-
-//! TODO docs
+/**
+ * Ask user to enter expression like ax^2+bx+c
+ * @param [out] coeffs Pointer to the coeffs
+*/
 void RequestExpression(struct EquationCoeffs* coeffs);
 
-//! TODO
+//! Internal function for enter expression from stdin
 enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs);
 
-//! TODO
-enum TermCoefficient _ProcessTerm(char* t, double* coeff);
 
 //! Funny AI trolling greeting
 void InterractiveAiGrreting();
