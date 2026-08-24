@@ -31,6 +31,9 @@ void InitEquationSolutions(struct EquationSolutions* c);
 //! Compares EquationSolutions structs
 bool CompareSolutions(const struct EquationSolutions* a, const struct EquationSolutions* b);
 
+//! Compares EquationCoeffs structs
+bool CompareCoeffs(const struct EquationCoeffs* a, const struct EquationCoeffs* b);
+
 /**
  * @param [in] coeffs Pointer to equation coefficients
  * @param [out] roots Pointer to the roots

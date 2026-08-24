@@ -78,3 +78,13 @@ bool CompareSolutions(const struct EquationSolutions* a, const struct EquationSo
 							  (Equals(a->root1, b->root2) && Equals(a->root2, b->root1));
 	return true;
 }
+
+bool CompareCoeffs(const struct EquationCoeffs* a, const struct EquationCoeffs* b){
+	assert(a != NULL);
+	assert(b != NULL);
+
+	return (a->coeff_of_sq_x == b->coeff_of_sq_x) &&
+		   (a->coeff_of_x == b->coeff_of_x)       &&
+		   (a->free_coeff == b->free_coeff);
+}
+

@@ -1,12 +1,14 @@
 #ifndef __TEST__
 #define __TEST__
 
+#include "parser.h"
 #include "solver.h"
 #include <stddef.h>
 
-const int RND_TEST_UPPER = 10;
-const int RND_TEST_LOWER = -10;
-const int DEFAULT_TEST_COUNT = 10;
+const int RND_TEST_UPPER = 100;
+const int RND_TEST_LOWER = -100;
+const int DEFAULT_SOLVER_TEST_COUNT = 10;
+const int DEFAULT_PARSER_TEST_COUNT = 10;
 const bool DEFAULT_NEED_TEST = false;
 
 enum TestStatus{
@@ -54,7 +56,7 @@ void RunSolverTests(size_t test_cnt, const struct EquationCoeffs test_coeffs[], 
  * @param [int] expected expected test solution
  * @param [int] expected got test solution 
  */
-void PrintTestError(const struct EquationCoeffs* coeffs, const struct EquationSolutions* expected, const struct EquationSolutions* got);
+void PrintSolverTestError(const struct EquationCoeffs* coeffs, const struct EquationSolutions* expected, const struct EquationSolutions* got);
 
 //! Run all unit tests
 void TestAll();
@@ -65,5 +67,14 @@ void TestAll();
  * @returns equation coefficients
  */
 struct EquationCoeffs GetCoeffsBySolution(const struct EquationSolutions* test_res);
+
+//! Gen random term string for parser
+void _GenRandTerm(size_t term_length, char* term, enum TermCoefficient power);
+
+//! TODO docs
+void GenParserTests(size_t test_cnt, char** test_strings[], struct EquationCoeffs* test_res);
+
+//! TODO docs
+TestStatus TestParser(const char* test_string, const EquationCoeffs* coeffsRef, struct EquationCoeffs* test_res);
 
 #endif /*__TEST__*/

@@ -5,23 +5,9 @@
 #include "solver.h"
 #include "common.h"
 
-const char* _LEADING_VAR_STRINGS[] = {
-	"x^2", 
-	"x*x",
-	"x**2",
-	"*x^2", 
-	"*x*x",
-	"*x**2"
-};
-
-const char* _LINEAR_VAR_STRINGS[] = {
-	"x",
-	"*x"
-};
-
 enum TermCoefficient _ProcessTerm(const char* t, double* coeff){
 	#ifdef _DEBUG
-	printf("Runned _ProcessTerm with term %s\n", t);
+		printf("Runned _ProcessTerm with term %s\n", t);
 	#endif
 
 	assert(t != NULL);
@@ -29,13 +15,13 @@ enum TermCoefficient _ProcessTerm(const char* t, double* coeff){
 
 	double t_coeff = 0.;
 
-	char var[MAX_TERM_LENGTH];
+	char var[MAX_TERM_LENGTH] = {0};
 
 	bool full_term = true;
 	int parseCnt = sscanf(t, "%lf%s", &t_coeff, var);
 
 	#ifdef _DEBUG
-	printf("Parsed %d values %s\n", parseCnt, var);
+		printf("Parsed %d values %s\n", parseCnt, var);
 	#endif
 
 	if (parseCnt == 0){

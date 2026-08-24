@@ -6,16 +6,33 @@ const int MAX_EXPRESSION_LENGTH = 200;
 const int MAX_TERM_LENGTH = 100;
 
 enum TermCoefficient{
+	TERM_COEFFICIENT_MIN_VAL = -2,
 	INVALID_TERM  = -1,
 	CONSTANT_TERM =  0,
 	LINEAR_TERM   =  1,
-	LEADING_TERM  =  2
+	LEADING_TERM  =  2,
+	TERM_COEFFICIENT_MAX_VAL
 };
 
 enum ParsingStatus{
 	PARSING_ERROR,
 	PARSING_OK
 };
+
+const char* const _LEADING_VAR_STRINGS[] = {
+	"x^2", 
+	"x*x",
+	"x**2",
+	"*x^2", 
+	"*x*x",
+	"*x**2"
+};
+
+const char* const _LINEAR_VAR_STRINGS[] = {
+	"x",
+	"*x"
+};
+
 
 //! Remove all c characters in s[] string
 void StrSqueeze(char s[], int c);
