@@ -11,6 +11,20 @@
 #include "parser.h"
 #include "solver.h"
 
+const char* const _CONSOLE_RESET = "\033[0m\033[K";
+
+//! Internal function for enter expression from stdin
+enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs);
+
+/**
+ * Creates special string for console colored output
+ * @param [out] res_color 
+ * @param [in] res_color_len res_color string length
+ * @param [in] text_color color of the text
+ * @param [in] bg_color color of the background
+ * @note Do not use!
+ */
+void _CreateColorStr(char* res_color, size_t res_color_len, enum ConsoleColors text_color, enum ConsoleColors bg_color);
 
 void _PrintInvalidInputMessage(enum InputStatus input_result){
 	if (input_result == INVALID_NUM){
@@ -109,7 +123,7 @@ void PrintEquation(const struct EquationCoeffs* coeffs, int accuracy){
 enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs){
 	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
 
-	char sep1 = 0, sep2 = 0, sep3 = 0; // TODO: maybe fix
+	char sep1 = 0, sep2 = 0, sep3 = 0;
 	int argument_cnt = scanf("%lf%c %lf%c %lf%c", &coeffs->coeff_of_sq_x, &sep1, &coeffs->coeff_of_x, &sep2, &coeffs->free_coeff, &sep3);
 	if (argument_cnt != 6 || !isspace(sep1) || !isspace(sep2) || sep3 != '\n'){
 		ClearStdinBuffer();
@@ -124,7 +138,7 @@ enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs){
 YesNoInputStatus YesNoInput(){
 	char c = 0;
 	scanf("%c", &c);
-	c = tolower(c);
+	c = (char) tolower(c);
 	if (c == 'y'){
 		return YES_ANS;
 	}else if(c == 'n'){
@@ -132,16 +146,6 @@ YesNoInputStatus YesNoInput(){
 	}
 	return INVALID_ANS;
 }
-
-void StrSqueeze(char s[], int c){
-   int i, j;
-   for(i = j = 0; s[i] != '\0'; i++){
-      if (s[i] != c)
-         s[j++] = s[i];
-   }
-   s[j] = '\0';
-}
-
 
 void RequestCoefficients(struct EquationCoeffs* coeffs){
 	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
@@ -185,12 +189,6 @@ enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs){
 		printf("Got expression %s\n", res);
 	#endif
 
-	StrSqueeze(expr, ' ');
-
-	#ifdef _DEBUG
-		printf("After reoving whitespaces expression is %s\n", res);
-	#endif
-
 	enum ParsingStatus parsing_result = ParseExpression(expr, coeffs);
 
 	if(parsing_result == PARSING_ERROR) {
@@ -215,30 +213,3 @@ enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs){
 
 
 //-----------------------
-
-const char* const _funnyAiGreeting = R"(
-🧠✨ Уважаемый пользователь.
-
-Перед вами не просто квадратное уравнение.
-
-Перед вами — **возможность**.
-
-**x² − 4x + 3 = 0**
-
-Два корня.
-Один дискриминант.
-Бесконечное количество способов сказать, что это сделала нейросеть.
-
-Желаете ли вы позволить **ARTIFICIAL INTELLIGENCE™** раскрыть тайну переменной X?
-
-**Y — узнать истину**
-**N — сохранить тайну**
-)";
-
-void InterractiveAiGrreting(){
-	ColoredPrintf(MAGENTA, BLACK, _funnyAiGreeting);
-}
-
-void InterractiveAiGoodbye(){
-
-}

@@ -8,8 +8,6 @@
 const int DEFAULT_ACCURACY = 2;
 const int COLOR_STR_MAX_LEN = 100;
 
-const char* const _CONSOLE_RESET = "\033[0m\033[K";
-
 enum ConsoleColors{
 	NO_COLOR = -1, ///< Default console color
 	BLACK =     0,
@@ -34,15 +32,6 @@ enum YesNoInputStatus{
 	YES_ANS
 };
 
-/**
- * Creates special string for console colored output
- * @param [out] res_color 
- * @param [in] res_color_len res_color string length
- * @param [in] text_color color of the text
- * @param [in] bg_color color of the background
- * @note Do not use!
- */
-void _CreateColorStr(char* res_color, size_t res_color_len, enum ConsoleColors text_color, enum ConsoleColors bg_color);
 
 /**
  * Printf with custom background and text colors
@@ -93,15 +82,5 @@ YesNoInputStatus YesNoInput();
  * @param [out] coeffs Pointer to the coeffs
 */
 void RequestExpression(struct EquationCoeffs* coeffs);
-
-//! Internal function for enter expression from stdin
-enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs);
-
-
-//! Funny AI trolling greeting
-void InterractiveAiGrreting();
-
-//! Funny AI trolloing goodby
-void InterractiveAiGoodbye();
 
 #endif /*__IO__*/

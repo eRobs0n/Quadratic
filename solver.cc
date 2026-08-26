@@ -83,8 +83,8 @@ bool CompareCoeffs(const struct EquationCoeffs* a, const struct EquationCoeffs* 
 	assert(a != NULL);
 	assert(b != NULL);
 
-	return (a->coeff_of_sq_x == b->coeff_of_sq_x) &&
-		   (a->coeff_of_x == b->coeff_of_x)       &&
-		   (a->free_coeff == b->free_coeff);
+	return Equals(a->coeff_of_sq_x, b->coeff_of_sq_x) &&
+		   Equals(a->coeff_of_x, b->coeff_of_x)       &&
+		   Equals(a->free_coeff, b->free_coeff);
 }
 

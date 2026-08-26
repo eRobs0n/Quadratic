@@ -31,17 +31,6 @@ void RunExpressionMode(int accuracy){
 	PrintRoots(&roots, accuracy);
 }
 
- // TODO
-void RunAiMode(){
-	InterractiveAiGrreting();
-
-	YesNoInputStatus ans = YesNoInput();
-	if (ans == NO_ANS){
-		InterractiveAiGoodbye();
-	}
-
-}
-
 int main(int argc, char* argv[]){
 	SetupRandom();
 

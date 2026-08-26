@@ -2,7 +2,7 @@
 #define __PARSER__
 #include <stddef.h>
 
-const int MAX_EXPRESSION_LENGTH = 200;
+const int MAX_EXPRESSION_LENGTH = 2001;
 const int MAX_TERM_LENGTH = 100;
 
 enum TermCoefficient{
