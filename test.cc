@@ -1,6 +1,8 @@
 #include "test.h"
 
+#include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
@@ -13,65 +15,28 @@
 #include "string.h"
 #include "parser.h"
 
+struct SolverTestCase spec_solver_tests[] = {
+//.    a*x^2    b*x  	c      root1  root2     nRoots
+	{ {0, 		0, 	 	0}, 	{0, 	0,		INF_ROOTS}},
+	{ {0, 		4, 	 	-8}, 	{0, 	2,		ONE_ROOT}},
+	{ {1, 		0, 	 	-4}, 	{2, 	-2,		TWO_ROOTS}},
+	{ {0, 		0, 	 	1}, 	{0, 	0,		NO_ROOTS}},
+	{ {0, 		1, 	 	0}, 	{0, 	0,		ONE_ROOT}}
 
-
-const EquationCoeffs spec_solver_tests_coeffs[] = {
-/*   x^2   x    c       */
-	{ 0,   0,   0},
-	{ 0,   4,  -8},
-	{ 1,   0,  -4},
-	{ 0,   0,   1},
-	{ 0,   1,   0}
 };
 
-const EquationSolutions spec_solver_tests_solutions[] = {
-	{.root1 = 0, .root2 =  0, .nRoots = INF_ROOTS},
-	{.root1 = 0, .root2 =  2, .nRoots = ONE_ROOT},
-	{.root1 = 2, .root2 = -2, .nRoots = TWO_ROOTS},
-	{.root1 = 0, .root2 =  0, .nRoots = NO_ROOTS},
-	{.root1 = 0, .root2 =  0, .nRoots = ONE_ROOT}
-};
-char* spec_parser_tests_strings[] = {
-	"x^2+x+1", 
-	"-x-x^2",
-	"-42",
-	"1.5x^2 - \t 1.5x \t -6.75",
-	"1=1",
-	"5x^2 = 4x - 12 + 32 - 1*x^2",
-	"=52",
-	"4x=2=2-5*x",
-	"aboba worng string",
-	"x*x+x^2+x=2=2=2",
-	"x^2=+-x^2"
-};
-
-const EquationCoeffs spec_parser_tests_coeffs[] = {
-/*   x^2     x      c   */
-	{ 1,     1,     1},
-	{ -1,   -1,     0},
-	{  0,    0,   -42},
-	{1.5,  -1.5, -6.75},
-	{  0,    0,     0},
-	{  6,   -4,    20},
-	{  0,    0,     0},
-	{  0,    0,     0},
-	{  0,    0,     0},
-	{  0,    0,     0},
-	{  0,    0,     0}
-};
-
-const ParsingStatus spec_parser_tests_statuses[] = {
-	PARSING_OK,
-	PARSING_OK,
-	PARSING_OK,
-	PARSING_OK,
-	PARSING_OK,
-	PARSING_OK,
-	PARSING_ERROR,
-	PARSING_ERROR,
-	PARSING_ERROR,
-	PARSING_ERROR,
-	PARSING_ERROR
+struct ParserTestCase spec_parser_tests[] = {
+	{"x^2+x+1", 					{ 1, 1, 1}, 			PARSING_OK},
+	{"-x-x^2", 	  					{ -1, -1, 0}, 			PARSING_OK},
+	{"-42", 	    				{ 0, 0, -42}, 			PARSING_OK},
+	{"1.5x^2 - \t 1.5x \t -6.75", 	{1.5,  -1.5, -6.75}, 	PARSING_OK},
+	{"1=1", 						{ 0, 0, 0}, 			PARSING_OK},
+	{"5x^2 = 4x - 12 + 32 - 1*x^2", { 6, -4, 20}, 			PARSING_OK},
+	{"=52", 						{ NAN, NAN, NAN}, 		PARSING_ERROR},
+	{"4x=2=2-5*x",   				{ NAN, NAN, NAN},       PARSING_ERROR},
+	{"aboba worng string",			{ NAN, NAN, NAN},		PARSING_ERROR},
+	{"x*x+x^2+x=2=2=2",				{ NAN, NAN, NAN},		PARSING_ERROR},
+	{"x^2=+-x^2",					{ NAN, NAN, NAN},		PARSING_ERROR}
 };
 
 const int _MAX_TERMS_FOR_PARSER_TEST = 20;
@@ -80,42 +45,40 @@ int GetRandInBounds(int lower, int upper){
 	return lower + (rand() % (upper - lower + 1));
 }
 
-TestStatus TestSolver(const struct EquationCoeffs* coeffs, const struct EquationSolutions* rootsRef, struct EquationSolutions* test_res){
-	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
-	assert(rootsRef != NULL);
-	assert(test_res != NULL);
+TestStatus TestSolver(const struct SolverTestCase* test, struct EquationSolutions* ret_roots){
+	assert(test != NULL);
+	assert(ret_roots != NULL);
 
-	SolveEquation(coeffs, test_res);
-	if (!CompareSolutions(test_res, rootsRef)){
+	SolveEquation(&test->coeffs, ret_roots);
+	if (!CompareSolutions(&test->refRoots, ret_roots)){
 		return TEST_FAILED;
 	}
 	return TEST_PASSED;
 }
 
-void GenSolverTests(size_t test_cnt, struct EquationCoeffs* test_coeffs, struct EquationSolutions* test_res){
-	assert(test_coeffs != NULL);
-	assert(test_res != NULL);
+
+void GenSolverTests(size_t test_cnt, struct SolverTestCase* tests){
+	assert(tests != NULL);
 
 	for (size_t i = 0; i < test_cnt; i++){
-		test_res[i].nRoots = TWO_ROOTS;
+		tests[i].refRoots.nRoots = TWO_ROOTS;
 
 		do{
-			test_res[i].root1 = (double) GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
-			test_res[i].root2 = (double) GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
-		}while (Equals(test_res[i].root1, test_res[i].root2));
+			tests[i].refRoots.root1 = (double) GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
+			tests[i].refRoots.root2 = (double) GetRandInBounds(RND_TEST_LOWER, RND_TEST_UPPER);
+		}while (Equals(tests[i].refRoots.root1, tests[i].refRoots.root2));
 
-		test_coeffs[i] = GetCoeffsBySolution(&test_res[i]);
+		tests[i].coeffs = GetCoeffsBySolution(&tests[i].refRoots);
 	}
 }
 
-void RunSolverTests(size_t test_cnt, const struct EquationCoeffs test_coeffs[], const struct EquationSolutions test_res[]){
-	assert(test_coeffs != NULL);
-	assert (test_res != NULL);
+void RunSolverTests(size_t test_cnt, const struct SolverTestCase* tests){
+	assert(tests != NULL);
 
 	for (size_t i = 0; i < test_cnt; i++){
-		struct EquationSolutions result;
-		if (TestSolver(&test_coeffs[i], &test_res[i], &result) == TEST_FAILED)
-			PrintSolverTestError(&test_coeffs[i], &test_res[i], &result);
+		struct EquationSolutions result = {};
+		if (TestSolver(&tests[i], &result) == TEST_FAILED)
+			PrintSolverTestError(&tests[i], &result);
 		else
 			ColoredPrintf(GREEN, BLACK, "Test %d passed!\n", i+1);
 	}
@@ -125,14 +88,13 @@ void SetupRandom(){
 	srand(time(0));
 }
 
-void PrintSolverTestError(const struct EquationCoeffs* coeffs, const struct EquationSolutions* expected, const struct EquationSolutions* got){
-	assert(coeffs != NULL && "Error! Pointer to coeffs is NULL");
-	assert (expected != NULL);
-	assert (got != NULL);
+void PrintSolverTestError(const struct SolverTestCase* test, const struct EquationSolutions *got){
+	assert(test != NULL);
+	assert(got  != NULL);
 
 	ColoredPrintf(RED, NO_COLOR, "Solver test FAILED:\n");
-		PrintEquation(coeffs, 2);	
-		ColoredPrintf(RED, NO_COLOR, "expected: %lf %lf\ngot:      %lf %lf\n", expected->root1, expected->root2,
+		PrintEquation(&test->coeffs, 2);	
+		ColoredPrintf(RED, NO_COLOR, "expected: %lf %lf\ngot:      %lf %lf\n", test->refRoots.root1, test->refRoots.root2,
 			got->root1, got->root2);
 }
 
@@ -192,12 +154,12 @@ double _GenRandTerm(size_t term_length, char* term, enum TermCoefficient power){
 	return coeff;
 }
 
-void GenParserTests(size_t test_cnt, int max_test_string_len, char** test_strings, struct EquationCoeffs* test_res){
-	assert(test_strings != NULL);
-	assert(test_res != NULL);
-	assert(MAX_TERM_LENGTH * _MAX_TERMS_FOR_PARSER_TEST < max_test_string_len && "Too small max_test_string_len!");
+void GenParserTests(size_t test_cnt, struct ParserTestCase* tests){
+	assert(tests != NULL);
 
 	for(unsigned i = 0; i < test_cnt; i++){
+		assert(tests[i].expression != NULL);
+
 		struct EquationCoeffs coeff = {0,0,0};
 		for(int j = 0; j < _MAX_TERMS_FOR_PARSER_TEST; j++){
 			char rand_term[MAX_TERM_LENGTH] = {0};
@@ -227,93 +189,96 @@ void GenParserTests(size_t test_cnt, int max_test_string_len, char** test_string
 				assert(false && "Invalid enum in GenParserTests!");
 			}
 
-			strncat(test_strings[i], rand_term, MAX_TERM_LENGTH);
-			test_res[i] = coeff;
+			//if (strlen(tests[i].expression) + strlen(rand_term) >= MAX_EXPRESSION_LENGTH) break;
+			//debug_printf("%zu %zu\n\n", strlen(tests->expression), strlen(rand_term));
+
+			strncat(tests[i].expression, rand_term, MAX_TERM_LENGTH);
+			tests[i].refCoeffs = coeff;
+			tests[i].refStatus = PARSING_OK;
 		}
 	}
 }
 
-TestStatus TestParser(const char* test_string, const EquationCoeffs* coeffsRef, enum ParsingStatus statRef,
-	struct EquationCoeffs* test_res){
-	assert(test_string != NULL);
-	assert(coeffsRef != NULL);
-	assert(test_res != NULL);
+TestStatus TestParser(struct ParserTestCase* test, 
+	struct EquationCoeffs* ret_coeffs, enum ParsingStatus* ret_status){
+	assert(test != NULL);
+	assert(test->expression != NULL);
+	assert(ret_coeffs != NULL);
+	assert(ret_status != NULL);
 
-	enum ParsingStatus test_res_stat = ParseExpression(test_string, test_res);
-	if (test_res_stat != statRef && !CompareCoeffs(test_res, coeffsRef)){
+	*ret_status = ParseExpression(test->expression, ret_coeffs);
+	if (*ret_status != test->refStatus && !CompareCoeffs(&test->refCoeffs, ret_coeffs)){
 		return TEST_FAILED;
 	}
 	return TEST_PASSED;
 }
 
-void PrintParserTestError(const char* test_str, const struct EquationCoeffs* expected, const struct EquationCoeffs* got){
-	assert(test_str != NULL);
-	assert (expected != NULL);
-	assert (got != NULL);
+void PrintParserTestError(struct ParserTestCase* test, struct EquationCoeffs* gotCoeffs, enum ParsingStatus gotStatus){
+	assert(test != NULL);
+	assert (gotCoeffs != NULL);
+	assert (test->expression != NULL);
 
 	ColoredPrintf(RED, NO_COLOR, "Parser test FAILED:\n"
-		"Expected result: eq - ");
-	PrintEquation(expected, DEFAULT_ACCURACY);
+		"Expected result: status - %s, eq - ", test->refStatus == PARSING_ERROR ? "ERROR" : "OK");
+	PrintEquation(&test->refCoeffs, DEFAULT_ACCURACY);
 	ColoredPrintf(RED, NO_COLOR,
-		"Got result: eq - ");
-	PrintEquation(got, DEFAULT_ACCURACY);
-	printf("\n");
-	ColoredPrintf(RED, NO_COLOR, "Parserd string was %s\n", test_str);
+		"Got result: status - %s, eq - ", gotStatus == PARSING_ERROR ? "ERROR" : "OK");
+	PrintEquation(gotCoeffs, DEFAULT_ACCURACY);
+	ColoredPrintf(RED, NO_COLOR, "Parserd string was %s\n", test->expression);
 }
 
-void RunParserTests(size_t test_cnt, char** test_strings, const enum ParsingStatus* statsRef,
- const struct EquationCoeffs* test_res){
-	assert(test_strings != NULL);
-	assert(test_res != NULL);
+
+void RunParserTests(size_t test_cnt, struct ParserTestCase* test){
+	assert(test != NULL);
+	assert(test->expression != NULL);
 
 	for(size_t i = 0; i < test_cnt; i++){
 		struct EquationCoeffs result = {0., 0., 0.};
-		if (TestParser(test_strings[i], &test_res[i], statsRef[i], &result) == TEST_FAILED){
-			PrintParserTestError(test_strings[i], &test_res[i], &result);
+		enum ParsingStatus resultStatus;
+		if (TestParser(test, &result, &resultStatus) != TEST_PASSED){
+			PrintParserTestError(test, &result, resultStatus);
 		}else{
 			ColoredPrintf(GREEN, BLACK, "Parser test %d passed!\n", i+1);
 		}
 	}
 }
 
-
 void TestAll(){
 	ColoredPrintf(YELLOW, NO_COLOR, "Testing solver...\n");
 	printf("Testing solver group 1 - random tests:\n");
-	struct EquationCoeffs test_coeffs[DEFAULT_SOLVER_TEST_COUNT];
-	struct EquationSolutions test_res[DEFAULT_SOLVER_TEST_COUNT];
-	for(int i = 0; i < DEFAULT_SOLVER_TEST_COUNT; i++){
-		InitEquationCoeffs(&test_coeffs[i]);
-		InitEquationSolutions(&test_res[i]);
-	}
-	GenSolverTests(DEFAULT_SOLVER_TEST_COUNT, test_coeffs, test_res);
-	RunSolverTests(DEFAULT_SOLVER_TEST_COUNT, test_coeffs, test_res);
+	
+	struct SolverTestCase solver_rand_tests[DEFAULT_SOLVER_TEST_COUNT] = {};
+	
+	GenSolverTests(DEFAULT_SOLVER_TEST_COUNT, solver_rand_tests);
+	RunSolverTests(DEFAULT_SOLVER_TEST_COUNT, solver_rand_tests);
 
 	printf("Testing solver group 2 - specific tests:\n");
-	RunSolverTests(ARR_LEN(spec_solver_tests_coeffs), spec_solver_tests_coeffs, spec_solver_tests_solutions);
+	RunSolverTests(ARR_LEN(spec_solver_tests), spec_solver_tests);
 
+	//---------
 	ColoredPrintf(YELLOW, NO_COLOR, "Testing parser...\n");
 	printf("Testing parser group 1 - random tests:\n");
 
-	char** test_strings = (char**) calloc(DEFAULT_PARSER_TEST_COUNT, sizeof(char*));
-	for(int i = 0; i < DEFAULT_PARSER_TEST_COUNT; i++){
-		test_strings[i] = (char*) calloc(MAX_EXPRESSION_LENGTH, sizeof(char));
-	}
-	struct EquationCoeffs parser_test_ref[DEFAULT_PARSER_TEST_COUNT] = {};
-	enum ParsingStatus parser_test_ref_stats[DEFAULT_PARSER_TEST_COUNT] = {};
-	for (int i = 0; i < DEFAULT_PARSER_TEST_COUNT; i++) parser_test_ref_stats[i] = PARSING_OK;
 
-	GenParserTests(DEFAULT_PARSER_TEST_COUNT, MAX_EXPRESSION_LENGTH, test_strings, parser_test_ref);
-	RunParserTests(DEFAULT_PARSER_TEST_COUNT, test_strings, parser_test_ref_stats, parser_test_ref);
+	struct ParserTestCase* parser_rand_tests = (struct ParserTestCase*) calloc(DEFAULT_PARSER_TEST_COUNT, 
+		sizeof(struct ParserTestCase));
+
+	assert(parser_rand_tests != NULL && "Can't allocate memory for parser random tests");
 
 	for(int i = 0; i < DEFAULT_PARSER_TEST_COUNT; i++){
-		free(test_strings[i]);
+		parser_rand_tests[i].expression = (char*) calloc(MAX_EXPRESSION_LENGTH, sizeof(char));
+		assert(parser_rand_tests[i].expression != NULL && "Can't allocate memory for parser random tests");
 	}
-	free(test_strings);
+
+	GenParserTests(DEFAULT_PARSER_TEST_COUNT, parser_rand_tests);
+	RunParserTests(DEFAULT_PARSER_TEST_COUNT, parser_rand_tests);
+
+	for(int i = 0; i < DEFAULT_PARSER_TEST_COUNT; i++){
+		free(parser_rand_tests[i].expression);
+	}
+	free(parser_rand_tests);
 
 	printf("Testing parser group 2 - specific tests:\n");
-	RunParserTests(ARR_LEN(spec_parser_tests_strings), spec_parser_tests_strings, spec_parser_tests_statuses, spec_parser_tests_coeffs);
-
+	RunParserTests(ARR_LEN(spec_parser_tests), spec_parser_tests);
 }
-
 

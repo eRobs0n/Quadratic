@@ -17,11 +17,15 @@ enum TestStatus{
 };
 
 //TODO sovler testcase struct
+struct SolverTestCase{
+	struct EquationCoeffs coeffs;
+	struct EquationSolutions refRoots;
+};
 
 struct ParserTestCase{
-	const char* expression;
-	struct EquationCoeffs parsingRes;
-	enum ParsingStatus parsingStatus;
+	char* expression;
+	struct EquationCoeffs refCoeffs;
+	enum ParsingStatus refStatus;
 };
 
 
@@ -38,7 +42,7 @@ int GetRandInBounds(int lower, int upper);
  * @param [out] test_res result calculated by equation solver
  * @returns testing status
  */
-TestStatus TestSolver(const struct EquationCoeffs* coeffs, const struct EquationSolutions* rootsRef, struct EquationSolutions* test_res);
+TestStatus TestSolver(const struct SolverTestCase* test, struct EquationSolutions* ret_roots);
 
 /**
  * Generate array of random tests for solver
@@ -46,14 +50,14 @@ TestStatus TestSolver(const struct EquationCoeffs* coeffs, const struct Equation
  * @param [out] test_coeffs array for write generated test coeffs
  * @param [out] test_res array for write generated test solutions
  */
-void GenSolverTests(size_t test_cnt, struct EquationCoeffs* test_coeffs, struct EquationSolutions* test_res);
+void GenSolverTests(size_t test_cnt, struct SolverTestCase* tests);
 
 /**
  * Run multiple solver tests
  * @param [in] test_coeffs array of test coeffs
  * @param [in] test_res array of solutions
  */
-void RunSolverTests(size_t test_cnt, const struct EquationCoeffs test_coeffs[], const struct EquationSolutions test_res[]);
+void RunSolverTests(size_t test_cnt, const struct SolverTestCase* tests);
 
 /**
  * Print error message (test failed)
@@ -61,7 +65,7 @@ void RunSolverTests(size_t test_cnt, const struct EquationCoeffs test_coeffs[], 
  * @param [in] expected expected test solution
  * @param [in] expected got test solution 
  */
-void PrintSolverTestError(const struct EquationCoeffs* coeffs, const struct EquationSolutions* expected, const struct EquationSolutions* got);
+void PrintSolverTestError(const struct SolverTestCase* test, const struct EquationSolutions *got);
 
 //! Run all unit tests
 void TestAll();
@@ -83,7 +87,7 @@ double _GenRandTerm(size_t term_length, char* term, enum TermCoefficient power);
  * @param [out] test_strings Array of strings for testing parser
  * @param [out] test_res Array of test answers
  */
-void GenParserTests(size_t test_cnt, int max_test_string_len, const char** test_strings, struct EquationCoeffs* test_res);
+void GenParserTests(size_t test_cnt, struct ParserTestCase* tests);
 
 /**
  * Run tests for parser
@@ -93,8 +97,8 @@ void GenParserTests(size_t test_cnt, int max_test_string_len, const char** test_
  * @param [out] Result of parser work
  * @return Test status error or ok
  */
-TestStatus TestParser(const char* test_string, const EquationCoeffs* coeffsRef, enum ParsingStatus statRef,
-	struct EquationCoeffs* test_res);
+TestStatus TestParser(struct ParserTestCase* test, 
+	struct EquationCoeffs* ret_coeffs, enum ParsingStatus* ret_status);
 
 /**
  * Run multiple parser tests
@@ -103,11 +107,10 @@ TestStatus TestParser(const char* test_string, const EquationCoeffs* coeffsRef, 
  * @param [in] statsRef array of test statuses that parser must return
  * @param [out] test_res array of parsing result
  */
-void RunParserTests(size_t test_cnt, char** test_strings, const enum ParsingStatus* statsRef,
- const struct EquationCoeffs* test_res);
+void RunParserTests(size_t test_cnt, struct ParserTestCase* test);
 
 //! Prints parser test error message
-void PrintParserTestError(const char* test_str, const struct EquationCoeffs* expected, const struct EquationCoeffs* got);
+void PrintParserTestError(struct ParserTestCase* test, struct EquationCoeffs* gotCoeffs, enum ParsingStatus gotStatus);
 
 
 #endif /*__TEST__*/

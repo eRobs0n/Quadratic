@@ -6,7 +6,7 @@
 #include "common.h"
 
 enum TermCoefficient _ProcessTerm(const char* t, double* coeff){
-	#ifdef _DEBUG
+	#ifdef _DEBUG_PARSER
 		debug_printf("_ProcessTerm: runned with term %s\n", t);
 	#endif
 
@@ -19,12 +19,12 @@ enum TermCoefficient _ProcessTerm(const char* t, double* coeff){
 
 	int parseCnt = sscanf(t, "%lf%s", &t_coeff, var);
 
-	#ifdef _DEBUG
+	#ifdef _DEBUG_PARSER
 		debug_printf("_ProcessTerm: parsed %d values %s\n", parseCnt, var);
 	#endif
 
 	if (parseCnt == 0){
-		#ifdef _DEBUG
+		#ifdef _DEBUG_PARSER
 		debug_printf("_ProcessTerm: Isn't full term\n");
 		#endif
 
@@ -103,7 +103,7 @@ enum ParsingStatus ParseExpression(const char* expr, struct EquationCoeffs* coef
 	MoveTermsLeftInStr(expr_cpy);
 	//StrSqueeze(expr_cpy, ' ');
 
-	#ifdef _DEBUG
+	#ifdef _DEBUG_PARSER
 		debug_printf("ParseExpression: After moving terms to the left %s\n", expr_cpy);
 	#endif
 
@@ -114,18 +114,18 @@ enum ParsingStatus ParseExpression(const char* expr, struct EquationCoeffs* coef
 		{.coeff_of_sq_x = 0., .coeff_of_x = 0., .free_coeff = 0};
 
 	while ((token_ptr = SepByTerms(token_ptr, term, MAX_TERM_LENGTH)) != NULL){
-		#ifdef _DEBUG
+		#ifdef _DEBUG_PARSER
 			//debug_printf("ParseExpression: separated term %s\n", term);
 		#endif
 
 		double pred_coeff = 0.;
 		enum TermCoefficient type = _ProcessTerm(term, &pred_coeff);
 
-		#ifdef _DEBUG
+		#ifdef _DEBUG_PARSER
 			//debug_printf("ParseExpression: extracted coefficeint %lf\n", pred_coeff);
 		#endif
 
-		#ifdef _DEBUG
+		#ifdef _DEBUG_PARSER
 			//debug_printf("ParseExpression: returned status: %d\n", type);
 		#endif
 

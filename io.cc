@@ -185,10 +185,6 @@ enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs){
 		return INVALID_STR;
 	}
 
-	#ifdef _DEBUG
-		printf("Got expression %s\n", res);
-	#endif
-
 	enum ParsingStatus parsing_result = ParseExpression(expr, coeffs);
 
 	if(parsing_result == PARSING_ERROR) {
