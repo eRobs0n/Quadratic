@@ -79,7 +79,6 @@ void ClearStdinBuffer(){
 	while ((c = getchar()) != '\n' && c != EOF);
 }
 
-// Better send as pointer
 void PrintRoots(const struct EquationSolutions* roots, int accuracy){
 	assert(roots != NULL);
 

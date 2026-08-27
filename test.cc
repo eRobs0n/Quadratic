@@ -228,7 +228,7 @@ void PrintParserTestError(struct ParserTestCase* test, struct EquationCoeffs* go
 }
 
 
-void RunParserTests(size_t test_cnt, struct ParserTestCase* test){
+void RunParserTests(size_t test_cnt, struct ParserTestCase* tests){
 	assert(test != NULL);
 	assert(test->expression != NULL);
 
