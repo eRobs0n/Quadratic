@@ -11,20 +11,8 @@
 #include "parser.h"
 #include "solver.h"
 
-const char* const _CONSOLE_RESET = "\033[0m\033[K";
-
 //! Internal function for enter expression from stdin
 enum InputStatus _EnterExpression(struct EquationCoeffs* coeffs);
-
-/**
- * Creates special string for console colored output
- * @param [out] res_color 
- * @param [in] res_color_len res_color string length
- * @param [in] text_color color of the text
- * @param [in] bg_color color of the background
- * @note Do not use!
- */
-void _CreateColorStr(char* res_color, size_t res_color_len, enum ConsoleColors text_color, enum ConsoleColors bg_color);
 
 void _PrintInvalidInputMessage(enum InputStatus input_result){
 	if (input_result == INVALID_NUM){
@@ -34,33 +22,6 @@ void _PrintInvalidInputMessage(enum InputStatus input_result){
 		}else{
 			printf("Please try again.\n");
 	}
-}
-
-void _CreateColorStr(char* res_color, const size_t res_color_len, const enum ConsoleColors text_color, enum ConsoleColors bg_color){
-	assert(res_color != NULL && "Error! Res color string is NULL");
-
-	if (text_color != NO_COLOR && bg_color != NO_COLOR) {
-		snprintf(res_color, res_color_len, "\033[3%d;4%dm", text_color, bg_color);
-	}
-	if (text_color == NO_COLOR){
-		snprintf(res_color, res_color_len, "\033[4%dm", bg_color);
-	}
-	if (bg_color == NO_COLOR){
-		snprintf(res_color, res_color_len, "\033[3%dm", text_color);
-	}
-}
-
-void ColoredPrintf(enum ConsoleColors text_color, enum ConsoleColors bg_color, const char* fmt, ...){
-	assert(fmt != NULL);
-
-	char res_color[COLOR_STR_MAX_LEN];
-	_CreateColorStr(res_color, COLOR_STR_MAX_LEN, text_color, bg_color);
-	printf("%s", res_color);
-	va_list args;
-	va_start(args, fmt);
-	vprintf(fmt, args);
-	va_end(args);
-	printf("%s", _CONSOLE_RESET);
 }
 
 bool CheckStringOfDigits(char *s){
@@ -146,28 +107,28 @@ YesNoInputStatus YesNoInput(){
 	return INVALID_ANS;
 }
 
-void RequestCoefficients(struct EquationCoeffs* coeffs){
+void RequestCoefficients(struct EquationCoeffs* coeffs, const char* message){
 	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
 
-	printf("\nEnter coefficients: ");
+	printf("\n%s", message);
 	enum InputStatus input_result = _EnterCoefficients(coeffs);
 	while (input_result != VALID_INPUT){
 		_PrintInvalidInputMessage(input_result);
-		printf("Enter coefficients: ");
+		printf("%s", message);
 		input_result = _EnterCoefficients(coeffs);
 	}
 }
 
-void RequestExpression(struct EquationCoeffs* coeffs){
+void RequestExpression(struct EquationCoeffs* coeffs, const char* message){
 	assert(coeffs != NULL && "Error! coeffs pointer is NULL");
 
-	printf("\nEnter expression like a*x^2 + b*x + c: ");
+	printf("\n%s", message);
 
 	enum InputStatus input_result = _EnterExpression(coeffs);
 
 	while (input_result != VALID_INPUT){
 		_PrintInvalidInputMessage(input_result);
-		printf("Enter expression like a*x^2 + b*x + c: ");
+		printf("%s", message);
 		input_result = _EnterExpression(coeffs);
 	}
 

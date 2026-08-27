@@ -84,8 +84,12 @@ void RunSolverTests(size_t test_cnt, const struct SolverTestCase* tests){
 	}
 }
 
-void SetupRandom(){
-	srand(time(0));
+void SetupRandom(int seed){
+	if (seed != 0){
+		srand(seed);
+	}else{
+		srand(time(0));
+	}
 }
 
 void PrintSolverTestError(const struct SolverTestCase* test, const struct EquationSolutions *got){
@@ -229,21 +233,22 @@ void PrintParserTestError(struct ParserTestCase* test, struct EquationCoeffs* go
 
 
 void RunParserTests(size_t test_cnt, struct ParserTestCase* tests){
-	assert(test != NULL);
-	assert(test->expression != NULL);
+	assert(tests != NULL);
 
 	for(size_t i = 0; i < test_cnt; i++){
 		struct EquationCoeffs result = {0., 0., 0.};
 		enum ParsingStatus resultStatus;
-		if (TestParser(test, &result, &resultStatus) != TEST_PASSED){
-			PrintParserTestError(test, &result, resultStatus);
+		if (TestParser(tests, &result, &resultStatus) != TEST_PASSED){
+			PrintParserTestError(tests, &result, resultStatus);
 		}else{
 			ColoredPrintf(GREEN, BLACK, "Parser test %d passed!\n", i+1);
 		}
 	}
 }
 
-void TestAll(){
+void TestAll(int seed){
+	SetupRandom(seed);
+
 	ColoredPrintf(YELLOW, NO_COLOR, "Testing solver...\n");
 	printf("Testing solver group 1 - random tests:\n");
 	

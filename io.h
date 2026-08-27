@@ -4,21 +4,9 @@
 #include <stddef.h>
 #include "solver.h"
 #include "parser.h"
+#include "console.h"
 
 const int DEFAULT_ACCURACY = 2;
-const int COLOR_STR_MAX_LEN = 100;
-
-enum ConsoleColors{
-	NO_COLOR = -1, ///< Default console color
-	BLACK =     0,
-	RED =       1,
-	GREEN =     2,
-	YELLOW =    3,
-	BLUE =      4,
-	MAGENTA =   5,
-	CYAN =      6,
-	WHITE =     7
-};
 
 enum InputStatus{
 	VALID_INPUT,
@@ -31,17 +19,6 @@ enum YesNoInputStatus{
 	NO_ANS,
 	YES_ANS
 };
-
-
-/**
- * Printf with custom background and text colors
- * @param [in] text_color color of the text
- * @param [in] bg_color color of the background
- * @param [in] fmt printf format string
- * @param [in] ... printf args
- * @note Only for MacOs zsh!
- */
-void ColoredPrintf(enum ConsoleColors text_color, enum ConsoleColors bg_color, const char* fmt, ...);
 
 //! Checks if string contains only digits
 bool CheckStringOfDigits(char *s);
@@ -71,8 +48,9 @@ enum InputStatus _EnterCoefficients(struct EquationCoeffs* coeffs);
 /**
  * Ask user to enter equation coefficients (3 numbers)
  * @param [out] coeffs Pointer to the coeffs
+ * @param [in] message Request message
 */
-void RequestCoefficients(struct EquationCoeffs* coeffs);
+void RequestCoefficients(struct EquationCoeffs* coeffs, const char* message);
 
 //! Request Yes or No (y/n) from console
 YesNoInputStatus YesNoInput();
@@ -80,7 +58,8 @@ YesNoInputStatus YesNoInput();
 /**
  * Ask user to enter expression like ax^2+bx+c
  * @param [out] coeffs Pointer to the coeffs
+ * @param [in] message Request message
 */
-void RequestExpression(struct EquationCoeffs* coeffs);
+void RequestExpression(struct EquationCoeffs* coeffs, const char* message);
 
 #endif /*__IO__*/

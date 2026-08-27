@@ -17,19 +17,19 @@ enum TestStatus{
 };
 
 struct SolverTestCase{
-	struct EquationCoeffs coeffs;
-	struct EquationSolutions refRoots;
+	struct EquationCoeffs coeffs;			//<Coefficeints of equation
+	struct EquationSolutions refRoots;		//<Expected result
 };
 
 struct ParserTestCase{
-	char* expression;
-	struct EquationCoeffs refCoeffs;
-	enum ParsingStatus refStatus;
+	char* expression;						//<Expression for parser
+	struct EquationCoeffs refCoeffs;		//<Expected parsing result
+	enum ParsingStatus refStatus;			//<Expected parsing status
 };
 
 
-//! Setup random seed (by time)
-void SetupRandom();
+//! Setup random seed (if seed == 0 seed = time)
+void SetupRandom(int seed);
 
 //! Get random number in [lower; upper]
 int GetRandInBounds(int lower, int upper);
@@ -64,7 +64,7 @@ void RunSolverTests(size_t test_cnt, const struct SolverTestCase* tests);
 void PrintSolverTestError(const struct SolverTestCase* test, const struct EquationSolutions *got);
 
 //! Run all unit tests
-void TestAll();
+void TestAll(int seed);
 
 /**
  * Generate random coefficients by equation solutions

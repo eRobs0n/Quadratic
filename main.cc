@@ -2,12 +2,14 @@
 #include "solver.h"
 #include "cmd_flags.h"
 #include "test.h"
+#include "ai.h"
 
-void RunInteractiveMode(int accuracy){
+//! Run manual mode, user must enter coefficients
+void RunManualMode(int accuracy){
 	Greeting();
 	
 	struct EquationCoeffs coeffs;
-	RequestCoefficients(&coeffs);
+	RequestCoefficients(&coeffs, "Enter coefficients: ");
 
 	PrintEquation(&coeffs, accuracy);
 
@@ -17,11 +19,12 @@ void RunInteractiveMode(int accuracy){
 	PrintRoots(&roots, accuracy);
 }
 
+//! Run expression mode, user must enter expression
 void RunExpressionMode(int accuracy){
 	Greeting();
 	
 	struct EquationCoeffs coeffs;
-	RequestExpression(&coeffs);
+	RequestExpression(&coeffs, "Enter expression like a*x^2 + b*x + c: ");
 
 	PrintEquation(&coeffs, accuracy);
 
@@ -32,18 +35,23 @@ void RunExpressionMode(int accuracy){
 }
 
 int main(int argc, char* argv[]){
-	SetupRandom();
 
 	int accuracy = DEFAULT_ACCURACY;
 	bool need_test = DEFAULT_NEED_TEST;
+	bool is_ai = false;
+	int random_test_seed = 0;
 
-	ProcessFlags(argc, argv, &accuracy, &need_test);
+	ProcessFlags(argc, argv, &accuracy, &need_test, &is_ai, &random_test_seed);
 
 	if (need_test){
-		TestAll();
-	} else {
-		RunExpressionMode(accuracy);
+		TestAll(random_test_seed);
+		return 0;
 	}
+
+	if (is_ai)
+		AiMode();
+	else
+		RunExpressionMode(accuracy);
 	
 	return 0;
 }
