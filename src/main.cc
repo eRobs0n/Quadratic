@@ -34,7 +34,7 @@ void RunExpressionMode(int accuracy){
 
 	PrintRoots(&roots, accuracy);
 
-	GraphMode(&coeffs);
+	GraphMode();
 }
 
 int main(int argc, char* argv[]){
@@ -42,19 +42,25 @@ int main(int argc, char* argv[]){
 	int accuracy = DEFAULT_ACCURACY;
 	bool need_test = DEFAULT_NEED_TEST;
 	bool is_ai = false;
+	bool is_nogui = false;
 	int random_test_seed = 0;
 
-	ProcessFlags(argc, argv, &accuracy, &need_test, &is_ai, &random_test_seed);
-
+	int res = ProcessFlags(argc, argv, &accuracy, &need_test, &is_ai, &random_test_seed, &is_nogui);
+	if (res == -1) return 0;
+	
 	if (need_test){
 		TestAll(random_test_seed);
 		return 0;
 	}
 
+	if (!is_nogui){
+		GraphMode();
+		return 0;
+	}
+
 	if (is_ai)
 		AiMode();
-	else
-		//RunManualMode(2);
+	else;
 		RunExpressionMode(accuracy);
 
 	return 0;

@@ -1,5 +1,6 @@
 #include "plot.h"
 #include "common.h"
+#include "console.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "solver.h"
@@ -7,6 +8,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+#include "parser.h"
+#include "io.h"
 
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
@@ -46,6 +49,8 @@ const float _BUTTON_PADDING = 7;
 const float _FIELD_LENGTH = 150.;
 const float _FIELD_HEIGHT = 40.;
 const int _GUI_FONT_SIZE = 20;
+
+#define _DEFAULT_EXPRESSION "x^2";
 
 //---------------------------------------------------
 const Rectangle settingsRect = 
@@ -103,6 +108,11 @@ const Rectangle settingsZRect =
 	settingsZLabelRect.y + _FIELD_HEIGHT,
 	_FIELD_LENGTH, _FIELD_HEIGHT};
 
+const Rectangle exprRext = 
+	{_BUTTON_PADDING* 2,
+	_SCREEN_HEIGHT - _BUTTON_SIZE - _BUTTON_PADDING,
+	_SCREEN_WIDTH - 2 * _BUTTON_SIZE,
+	_BUTTON_SIZE};
 //------------------------------------------------------
 
 //Global variables. Will be initialized on _LoadResources. DO NOT USE!
@@ -181,6 +191,12 @@ Vector2 _CorrectGridStep(Vector2 step);
 
 //! Fix and returns grid zoom if incorrect
 float _CorrectGridZoom(float zoom);
+
+//! Draws mouse highlight
+void _DrawMouseHighlight();
+
+//! Update roots and root points
+void _UpdateRootsAndPoints(struct EquationCoeffs* coeffs, struct EquationSolutions* roots, Vector2 root_points[_MAX_ROOT_POINTS]);
 //--------------------------------------------
 void _LoadResources(){
 	__NUMBERS_FONT = LoadFontEx("res/SFProText-Medium.ttf", _GRID_FONT_SIZE, 0, 250);
@@ -464,7 +480,35 @@ bool _ProcessGridSettingsWindow(Grid* g, bool* external_update_step, bool* exter
 	return state;
 }
 
-void GraphMode(const struct EquationCoeffs* coeffs){
+void _DrawMouseHighlight(const Grid* g){
+	DrawCircleV(GetMousePosition(), _CURSOR_POINT_RADIUS, DARKGRAY);
+    Vector2 mouseOnGrid = _ScreenToGrid(g, GetMousePosition());
+    DrawTextEx(__NUMBERS_FONT, TextFormat("[%.2f, %.2f]", mouseOnGrid.x, mouseOnGrid.y),
+            Vector2Add(GetMousePosition(), 
+            (Vector2){ _CURSOR_TEXT_PADDING_HORIZONTAL, _CURSOR_TEXT_PADDING_VERTICAL}), 
+            _GRID_FONT_SIZE, 2, BLACK);
+}
+
+void _UpdateRootsAndPoints(struct EquationCoeffs* coeffs, struct EquationSolutions* roots, Vector2 root_points[_MAX_ROOT_POINTS]){
+ 	SolveEquation(coeffs, roots);
+
+ 	switch (roots->nRoots){
+ 	case ONE_ROOT:
+ 		root_points[0] = {(float)roots->root1, 0};
+ 		break;
+ 	case TWO_ROOTS:
+ 		root_points[0] = {(float)roots->root1, 0};
+ 		root_points[1] = {(float)roots->root2, 0};
+ 		break;
+ 	default:
+ 		break;
+ 	}
+}
+
+void GraphMode(){
+
+	struct EquationCoeffs coeffs = {1, 0, 0};
+
 	Grid g = {};
 	_ResetGrid(&g);
 
@@ -478,26 +522,21 @@ void GraphMode(const struct EquationCoeffs* coeffs){
 
     SetTargetFPS(60);
 
-    Vector2 bounds = _GetBounds(&g, *coeffs);
-
- 	EquationSolutions roots = {};
- 	SolveEquation(coeffs, &roots);
- 	Vector2 root_points[_MAX_ROOT_POINTS] = {};
- 	switch (roots.nRoots){
- 	case ONE_ROOT:
- 		root_points[0] = {(float)roots.root1, 0};
- 		break;
- 	case TWO_ROOTS:
- 		root_points[0] = {(float)roots.root1, 0};
- 		root_points[1] = {(float)roots.root2, 0};
- 		break;
- 	default:
- 		break;
- 	}
+    Vector2 bounds = _GetBounds(&g, coeffs);
 
  	bool settingsWindowOpened = false;
  	bool update_step = true;
  	bool update_zoom = true;
+ 	bool exprExitMode = false;
+
+ 	char expression[MAX_EXPRESSION_LENGTH] = _DEFAULT_EXPRESSION;
+ 	
+ 	EquationSolutions roots = {0, 0, NO_ROOTS};
+ 	SolveEquation(&coeffs, &roots);
+
+ 	Vector2 root_points[_MAX_ROOT_POINTS] = {};
+
+ 	_UpdateRootsAndPoints(&coeffs, &roots, root_points);
 
     while (!WindowShouldClose()){
     	if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
@@ -506,13 +545,13 @@ void GraphMode(const struct EquationCoeffs* coeffs){
            	g.pos = Vector2Add(g.pos, delta);
         }
 
-        bounds = _GetBounds(&g, *coeffs);
+        bounds = _GetBounds(&g, coeffs);
     	BeginDrawing();
     		ClearBackground(RAYWHITE);
     		_DrawGrid(&g);
    			_DrawAxes(&g);
     		if (isfinite(bounds.x) && isfinite(bounds.y)){
-    			_DrawFunction(&g, /*&GetQuadraticValue,*/ coeffs, bounds);
+    			_DrawFunction(&g, /*&GetQuadraticValue,*/ &coeffs, bounds);
     		}	
 
     		for(int i = 0; i < roots.nRoots; i++){
@@ -523,12 +562,7 @@ void GraphMode(const struct EquationCoeffs* coeffs){
     			}
     		}
 
-    		DrawCircleV(GetMousePosition(), _CURSOR_POINT_RADIUS, DARKGRAY);
-    		Vector2 mouseOnGrid = _ScreenToGrid(&g, GetMousePosition());
-            DrawTextEx(__NUMBERS_FONT, TextFormat("[%.2f, %.2f]", mouseOnGrid.x, mouseOnGrid.y),
-                Vector2Add(GetMousePosition(), 
-                (Vector2){ _CURSOR_TEXT_PADDING_HORIZONTAL, _CURSOR_TEXT_PADDING_VERTICAL}), 
-                _GRID_FONT_SIZE, 2, BLACK);
+    		_DrawMouseHighlight(&g);
 
             if (GuiButton(homeRect, GuiIconText(ICON_HOUSE, ""))){
             	_ResetGrid(&g);
@@ -555,6 +589,17 @@ void GraphMode(const struct EquationCoeffs* coeffs){
 	        	update_zoom = true;
 	        }
 
+	        DrawRectangleRec(exprRext, RAYWHITE);
+	        if (GuiTextBox(exprRext, expression, _GUI_FONT_SIZE, exprExitMode)){
+	        	exprExitMode = !exprExitMode;
+
+	        	enum ParsingStatus stat = ParseExpression(expression, &coeffs);
+	        	if (stat == PARSING_ERROR){
+	        		strcpy(expression, "Invalid expression");
+	        	}
+	       		_UpdateRootsAndPoints(&coeffs, &roots, root_points);
+
+	        }
     	EndDrawing();
     }
 }

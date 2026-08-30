@@ -4,9 +4,7 @@
 
 /**
  * Runs graphics mode of quadratic equation solver
- * @param [in] coeffs Equation coefficients
- * 
  */
-void GraphMode(const struct EquationCoeffs* coeffs);
+void GraphMode();
 
 #endif /* _PLOT_ */
