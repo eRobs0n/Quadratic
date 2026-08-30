@@ -11,27 +11,103 @@
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
 
-#define DEBUG if (0)
 
-const int screenWidth = 700;
-const int screenHeight = 700;
+#define DEBUG if (1)
+
+const int _MAX_VALUEBOX_STR = 100;
+
+const int _SCREEN_WIDTH = 700;
+const int _SCREEN_HEIGHT = 700;
 
 const int _GRID_LINES_WIDTH = 2;
 const int _GRID_TEXT_PADDING = 5;
 const int _GRID_FONT_SIZE = 16;
+
 const int _NUM_POINTS = 100;
 const int _MAX_ROOT_POINTS = 3;
 const int _ROOT_POINTS_RADIUS = 6;
+
 const int _CURSOR_POINT_RADIUS = 4;
 const int _CURSOR_TEXT_PADDING_VERTICAL = -24;
 const int _CURSOR_TEXT_PADDING_HORIZONTAL = -44;
 const int _CURSOR_MAGNET_DISTANCE = 7;
-const float _MIN_GRID_STEP = 1e-4;
-const float _MAX_GRID_STEP = 1e4;
-const float _ZOOM_CHANGE_FACTOR = 2.1;
 
-//Global variable for font. Will be initialized on _LoadResources
+const float _DEFAULT_ZOOM = 40;
+const Vector2 _DEFAULT_GRID_POS = {_SCREEN_WIDTH/2., _SCREEN_HEIGHT/2.};
+const Vector2 _DEFAULT_GRID_STEP = {1., 1.};
+const float _MIN_GRID_STEP = 1e-2;
+const float _MAX_GRID_STEP = 1e2;
+const float _ZOOM_CHANGE_FACTOR = 2.1;
+const float _MIN_GRID_ZOOM = 10;
+const float _MAX_GRID_ZOOM = 1000;
+
+const float _BUTTON_SIZE = 50.;
+const float _BUTTON_PADDING = 7;
+const float _FIELD_LENGTH = 150.;
+const float _FIELD_HEIGHT = 40.;
+const int _GUI_FONT_SIZE = 20;
+
+//---------------------------------------------------
+const Rectangle settingsRect = 
+	{_SCREEN_WIDTH - _BUTTON_PADDING - _BUTTON_SIZE,
+ 	_SCREEN_HEIGHT - _BUTTON_PADDING - _BUTTON_SIZE,
+ 	_BUTTON_SIZE, _BUTTON_SIZE};
+
+const Rectangle homeRect = 
+	{_SCREEN_WIDTH - _BUTTON_PADDING - _BUTTON_SIZE, 
+ 	_BUTTON_PADDING,
+ 	_BUTTON_SIZE, _BUTTON_SIZE};
+
+const Rectangle plusRect = 
+	{_SCREEN_WIDTH - _BUTTON_PADDING - _BUTTON_SIZE, 
+ 	homeRect.y + _BUTTON_SIZE + _BUTTON_PADDING,
+ 	_BUTTON_SIZE, _BUTTON_SIZE};
+
+const Rectangle minusRect = 
+	{_SCREEN_WIDTH - _BUTTON_PADDING - _BUTTON_SIZE, 
+ 	plusRect.y + _BUTTON_SIZE + _BUTTON_PADDING,
+ 	_BUTTON_SIZE, _BUTTON_SIZE};
+
+const Rectangle settingsWindowRect = 
+	{_BUTTON_PADDING, _BUTTON_PADDING,
+ 	_FIELD_LENGTH + _BUTTON_PADDING * 2, 
+ 	_FIELD_HEIGHT * 6 + _BUTTON_PADDING * 7};
+
+const Rectangle settingsXLabelRect = 
+	{settingsWindowRect.x + _BUTTON_PADDING, 
+	settingsWindowRect.y + _BUTTON_PADDING * 3,
+	_FIELD_LENGTH, _FIELD_HEIGHT};
+
+const Rectangle settingsXStepRect = 
+	{settingsWindowRect.x + _BUTTON_PADDING, 
+	settingsXLabelRect.y + _FIELD_HEIGHT,
+	_FIELD_LENGTH, _FIELD_HEIGHT};
+
+const Rectangle settingsYLabelRect = 
+	{settingsWindowRect.x + _BUTTON_PADDING, 
+	settingsXStepRect.y + _FIELD_HEIGHT + _BUTTON_PADDING,
+	_FIELD_LENGTH, _FIELD_HEIGHT};
+
+const Rectangle settingsYStepRect = 
+	{settingsWindowRect.x + _BUTTON_PADDING, 
+	settingsYLabelRect.y + _FIELD_HEIGHT,
+	_FIELD_LENGTH, _FIELD_HEIGHT};
+
+const Rectangle settingsZLabelRect = 
+	{settingsWindowRect.x + _BUTTON_PADDING, 
+	settingsYStepRect.y + _FIELD_HEIGHT + _BUTTON_PADDING,
+	_FIELD_LENGTH, _FIELD_HEIGHT};
+
+const Rectangle settingsZRect = 
+	{settingsWindowRect.x + _BUTTON_PADDING, 
+	settingsZLabelRect.y + _FIELD_HEIGHT,
+	_FIELD_LENGTH, _FIELD_HEIGHT};
+
+//------------------------------------------------------
+
+//Global variables. Will be initialized on _LoadResources. DO NOT USE!
 Font __NUMBERS_FONT;
+Font __GUI_FONT;
 Image __ICON;
 
 struct Grid{
@@ -77,10 +153,44 @@ Vector2 _GridToScreen(const Grid* g, Vector2 p);
  */
 Vector2 _GetBounds(const Grid* grid, struct EquationCoeffs coeffs);
 
+/**
+ * Draws function on the screen
+ */
+void _DrawFunction(const Grid* grid, 
+				   /*double (*GetVal)(const struct EquationCoeffs* coeffs,double val),*/
+				   const struct EquationCoeffs* coeffs, Vector2 bounds);
+
+/**
+ * Zoom into grid (decrease step, increase zoom)
+ */
+void _ZoomIn(Grid* g);
+
+/**
+ * Zoom out of grid (decrease step, increase zoom)
+ */
+void _ZoomOut(Grid* g);
+
+//! Reset zoom and step
+void _ResetGrid(Grid* g);
+
+//! Draw settings window
+bool _ProcessGridSettingsWindow(Grid* grid);
+
+//! Fix and returns grid steps if incorrect
+Vector2 _CorrectGridStep(Vector2 step);
+
+//! Fix and returns grid zoom if incorrect
+float _CorrectGridZoom(float zoom);
 //--------------------------------------------
 void _LoadResources(){
 	__NUMBERS_FONT = LoadFontEx("res/SFProText-Medium.ttf", _GRID_FONT_SIZE, 0, 250);
+	__GUI_FONT = LoadFontEx("res/SFProText-Medium.ttf", _GUI_FONT_SIZE, 0, 250);
 	__ICON = LoadImage("res/x2.png");
+
+	GuiSetFont(__GUI_FONT);
+    GuiSetStyle(DEFAULT, TEXT_SIZE, _GUI_FONT_SIZE);
+   	GuiSetStyle(VALUEBOX, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+   	GuiSetStyle(LABEL, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
 
 	assert(IsFontValid(__NUMBERS_FONT) && "Failed to load font!");
 	assert(IsImageValid(__ICON) && "Failed to load font!");
@@ -102,7 +212,7 @@ Vector2 _GridToScreen(const Grid* g, Vector2 p){
 
 void _DrawAxes(const Grid* grid){
 	Vector2 topLeft = _ScreenToGrid(grid, {0, 0});
-	Vector2 bottomRight = _ScreenToGrid(grid, {screenWidth, screenHeight});
+	Vector2 bottomRight = _ScreenToGrid(grid, {_SCREEN_WIDTH, _SCREEN_HEIGHT});
 	Vector2 center_scr = _GridToScreen(grid, {0, 0});
 	bool x_on_top = false;
 	bool x_on_bot = false;
@@ -110,13 +220,13 @@ void _DrawAxes(const Grid* grid){
 	bool y_on_right = false;
 
 	if (center_scr.x < 0) y_on_left = true;
-	if (center_scr.x > screenWidth) y_on_right = true;
+	if (center_scr.x > _SCREEN_WIDTH) y_on_right = true;
 	if (center_scr.y < 0) x_on_top = true;
-	if (center_scr.y > screenHeight) x_on_bot = true;
+	if (center_scr.y > _SCREEN_HEIGHT) x_on_bot = true;
 	//Draw x --->
 	if (!x_on_bot && !x_on_top){
 		DrawLineEx({0, 		 	 	 grid->pos.y}, 
-			       {screenWidth, 	 grid->pos.y}, 
+			       {_SCREEN_WIDTH, 	 grid->pos.y}, 
 			       2, 
 			       BLACK);
 	}
@@ -127,12 +237,12 @@ void _DrawAxes(const Grid* grid){
 
 	float x_labels_pos = grid->pos.y + _GRID_TEXT_PADDING;
 	if (x_on_top) x_labels_pos = _GRID_TEXT_PADDING;
-	if (x_on_bot) x_labels_pos = screenHeight - _GRID_TEXT_PADDING - _GRID_FONT_SIZE;
+	if (x_on_bot) x_labels_pos = _SCREEN_HEIGHT - _GRID_TEXT_PADDING - _GRID_FONT_SIZE;
 
 	while(pos<=x_end){
 		if (!(fabs(pos)<1e-9)){
 			DrawTextPro(__NUMBERS_FONT, 
-					   TextFormat("%g", pos),
+					   TextFormat("%.2g", pos),
 					   {grid->pos.x + pos * grid->zoom, 
 					   x_labels_pos},
 					   {0, 0},
@@ -147,7 +257,7 @@ void _DrawAxes(const Grid* grid){
 	//Draw y |^
 	if (!y_on_left && !y_on_right){
 		DrawLineEx({grid->pos.x,     0}, 
-			       {grid->pos.x, 	 screenHeight}, 
+			       {grid->pos.x, 	 _SCREEN_HEIGHT}, 
 			       2, 
 			       BLACK);
 	}
@@ -158,11 +268,11 @@ void _DrawAxes(const Grid* grid){
 
 	float y_labels_pos = grid->pos.x + _GRID_TEXT_PADDING;
 	if (y_on_left) y_labels_pos = _GRID_TEXT_PADDING;
-	if (y_on_right) y_labels_pos = screenWidth - _GRID_TEXT_PADDING - _GRID_FONT_SIZE;
+	if (y_on_right) y_labels_pos = _SCREEN_WIDTH - _GRID_TEXT_PADDING - _GRID_FONT_SIZE;
 
 	while(pos <= y_stop){
 		DrawTextPro(__NUMBERS_FONT, 
-					TextFormat("%g", pos),
+					TextFormat("%.2g", pos),
 					{y_labels_pos,
 					grid->pos.y - pos * grid->zoom},
 					{0, 0},
@@ -180,7 +290,7 @@ void _DrawGrid(const Grid* grid){
 	assert(grid != NULL);
 
 	Vector2 topLeft = _ScreenToGrid(grid, {0, 0});
-	Vector2 bottomRight = _ScreenToGrid(grid, {screenWidth, screenHeight});
+	Vector2 bottomRight = _ScreenToGrid(grid, {_SCREEN_WIDTH, _SCREEN_HEIGHT});
 	//DEBUG printf("\ntopLeft: %f %f\n", topLeft.x, topLeft.y);
 
 	//Draw vertical |
@@ -191,7 +301,7 @@ void _DrawGrid(const Grid* grid){
 		if (!(fabs(pos) < 1e-9)){
 			float x_scr = grid->pos.x + pos * grid->zoom;
 			DrawLineEx({x_scr, 0}, 
-			       	   {x_scr, screenHeight}, 
+			       	   {x_scr, _SCREEN_HEIGHT}, 
 			       	   _GRID_LINES_WIDTH, 
 			       	   LIGHTGRAY);
 		}	
@@ -205,7 +315,7 @@ void _DrawGrid(const Grid* grid){
 		if (!(fabs(pos) < 1e-9)){
 			float y_scr = grid->pos.y - pos * grid->zoom;
 			DrawLineEx({0, 		 	 y_scr}, 
-			       	   {screenWidth, y_scr}, 
+			       	   {_SCREEN_WIDTH, y_scr}, 
 			       _GRID_LINES_WIDTH, 
 			       LIGHTGRAY);
 		}
@@ -219,7 +329,7 @@ Vector2 _GetBounds(const Grid* grid, struct EquationCoeffs coeffs){
 	assert(grid != NULL);
 
 	Vector2 topLeft = _ScreenToGrid(grid, {0, 0});
-	Vector2 bottomRight = _ScreenToGrid(grid, {screenWidth, screenHeight});
+	Vector2 bottomRight = _ScreenToGrid(grid, {_SCREEN_WIDTH, _SCREEN_HEIGHT});
 	Vector2 bounds = {}; //(left/right)
 	if (IsZero(coeffs.coeff_of_sq_x)) return {topLeft.x, bottomRight.x};
 	if (coeffs.coeff_of_sq_x > 0){
@@ -263,12 +373,104 @@ void _DrawFunction(const Grid* grid,
 	}
 }
 
+void _ZoomIn(Grid* g){
+	if (g->step.x > _MIN_GRID_STEP && g->step.y > _MIN_GRID_STEP && g->zoom < _MAX_GRID_ZOOM){
+        		g->zoom *= _ZOOM_CHANGE_FACTOR;
+        		g->step.x /= 2;
+        		g->step.y /= 2;  		
+    }
+}
+
+void _ZoomOut(Grid* g){
+	if (g->step.x < _MAX_GRID_STEP && g->step.y < _MAX_GRID_STEP &&
+		g->zoom > _MIN_GRID_ZOOM ){
+        g->zoom /= _ZOOM_CHANGE_FACTOR;
+        g->step.x *= 2;
+        g->step.y *= 2;
+    }
+}
+
+void _ResetGrid(Grid* g){
+	g->pos = _DEFAULT_GRID_POS;
+	g->step = _DEFAULT_GRID_STEP;
+	g->zoom = _DEFAULT_ZOOM;
+}
+
+Vector2 _CorrectGridStep(Vector2 step){
+	if (step.x < _MIN_GRID_STEP) step.x = _MIN_GRID_STEP;
+	if (step.y < _MIN_GRID_STEP) step.y = _MIN_GRID_STEP;
+
+	if (step.x > _MAX_GRID_STEP) step.x = _MAX_GRID_STEP;
+	if (step.y > _MAX_GRID_STEP) step.y = _MAX_GRID_STEP;
+
+	if (!isfinite(step.x) || !isfinite(step.y)){
+		DEBUG printf("Non finite %g %g\n", step.x, step.y);
+		step = _DEFAULT_GRID_STEP;
+	}
+	return step;
+}
+
+float _CorrectGridZoom(float zoom){
+	if (!isfinite(zoom)) zoom = _DEFAULT_ZOOM;
+	if(zoom < _MIN_GRID_ZOOM) zoom = _MIN_GRID_ZOOM;
+	if(zoom > _MAX_GRID_ZOOM) zoom = _MAX_GRID_ZOOM;
+	return zoom;
+}
+
+bool _ProcessGridSettingsWindow(Grid* g, bool* external_update_step, bool* external_update_zoom){
+	bool state = GuiWindowBox(settingsWindowRect, "Setting");
+	static bool _x_valueBoxEditMode = false, _y_valueBoxEditMode = false, _zoom_valueBoxEditMode = false;
+	static char __do_not_use_x_str_val[_MAX_VALUEBOX_STR] = "1";
+	static char __do_not_use_y_str_val[_MAX_VALUEBOX_STR] = "1";
+	static Vector2 st = _DEFAULT_GRID_STEP;
+	static float zoom = _DEFAULT_ZOOM;
+
+	static char __do_not_use_zoom_str_val[_MAX_VALUEBOX_STR] = "1";
+
+	if (*external_update_step){
+		snprintf(__do_not_use_x_str_val, _MAX_VALUEBOX_STR, "%.2f", g->step.x);
+		snprintf(__do_not_use_y_str_val, _MAX_VALUEBOX_STR, "%.2f", g->step.y);
+		st.x = g->step.x;
+		st.y = g->step.y;
+		*external_update_step = false;
+	}
+
+	if (*external_update_zoom){
+		snprintf(__do_not_use_zoom_str_val, _MAX_VALUEBOX_STR, "%.2f", g->zoom);
+		zoom = g->zoom;
+		*external_update_zoom = false;
+	}
+
+	GuiLabel(settingsXLabelRect, "X-axis step");
+	if (GuiValueBoxFloat(settingsXStepRect, NULL, __do_not_use_x_str_val, &st.x, _x_valueBoxEditMode)
+		&& strlen(__do_not_use_x_str_val) != 0){
+		 _x_valueBoxEditMode = !_x_valueBoxEditMode;
+		 g->step = _CorrectGridStep(st);
+	}
+	GuiLabel(settingsYLabelRect, "Y-axis step");
+	if (GuiValueBoxFloat(settingsYStepRect, NULL, __do_not_use_y_str_val, &st.y, _y_valueBoxEditMode)
+		&& strlen(__do_not_use_y_str_val) != 0){
+		_y_valueBoxEditMode = !_y_valueBoxEditMode;
+		g->step = _CorrectGridStep(st);
+	}
+
+	GuiLabel(settingsZLabelRect, "Zoom");
+	if (GuiValueBoxFloat(settingsZRect, NULL, __do_not_use_zoom_str_val, &zoom, _zoom_valueBoxEditMode)
+		&& strlen(__do_not_use_zoom_str_val) != 0){
+		 _zoom_valueBoxEditMode = !_zoom_valueBoxEditMode;
+		 g->zoom = _CorrectGridZoom(zoom);
+	}
+
+	return state;
+}
+
 void GraphMode(const struct EquationCoeffs* coeffs){
-	Grid g = {{screenWidth/2., screenHeight/2.}, {1, 1}, 60.f};
+	Grid g = {};
+	_ResetGrid(&g);
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
-	InitWindow(screenWidth, screenHeight, "Quadratic");
+	InitWindow(_SCREEN_WIDTH, _SCREEN_HEIGHT, "Quadratic");
 
 	_LoadResources();
 
@@ -293,27 +495,15 @@ void GraphMode(const struct EquationCoeffs* coeffs){
  		break;
  	}
 
+ 	bool settingsWindowOpened = false;
+ 	bool update_step = true;
+ 	bool update_zoom = true;
+
     while (!WindowShouldClose()){
     	if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
         {
             Vector2 delta = GetMouseDelta();
            	g.pos = Vector2Add(g.pos, delta);
-        }
-
-        //TODO fix zoom and step changes
-        if (IsKeyPressed(KEY_UP)){
-        	if (g.step.x > _MIN_GRID_STEP && g.step.y > _MIN_GRID_STEP){
-        		g.zoom *= _ZOOM_CHANGE_FACTOR;
-        		g.step.x /= 2;
-        		g.step.y /= 2;  		
-        	}
-        }
-        if (IsKeyPressed(KEY_DOWN)){
-        	if (g.step.x < _MAX_GRID_STEP && g.step.y < _MAX_GRID_STEP){
-        		g.zoom /= _ZOOM_CHANGE_FACTOR;
-        		g.step.x *= 2;
-        		g.step.y *= 2;
-        	}
         }
 
         bounds = _GetBounds(&g, *coeffs);
@@ -339,6 +529,31 @@ void GraphMode(const struct EquationCoeffs* coeffs){
                 Vector2Add(GetMousePosition(), 
                 (Vector2){ _CURSOR_TEXT_PADDING_HORIZONTAL, _CURSOR_TEXT_PADDING_VERTICAL}), 
                 _GRID_FONT_SIZE, 2, BLACK);
+
+            if (GuiButton(homeRect, GuiIconText(ICON_HOUSE, ""))){
+            	_ResetGrid(&g);
+            	update_step = true;
+	        	update_zoom = true;
+            }
+
+            if (GuiButton(settingsRect, GuiIconText(ICON_GEAR, ""))){
+            	settingsWindowOpened = true;
+            }
+
+            if(settingsWindowOpened){
+				settingsWindowOpened = !_ProcessGridSettingsWindow(&g, &update_step, &update_zoom);	
+			}
+
+	        if (IsKeyPressed(KEY_UP) || GuiButton(plusRect, GuiIconText(ICON_BOX_MORE, ""))){
+	        	_ZoomIn(&g);
+	        	update_step = true;
+	        	update_zoom = true;
+	        }
+	        if (IsKeyPressed(KEY_DOWN) || GuiButton(minusRect, GuiIconText(ICON_BOX_MINUS, ""))){
+	        	_ZoomOut(&g);
+	        	update_step = true;
+	        	update_zoom = true;
+	        }
 
     	EndDrawing();
     }
