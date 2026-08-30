@@ -36,7 +36,7 @@ jobs:
       - name: Install Graphviz
         run: sudo apt install graphviz
       - name: Create documentation     
-        run: doxygen doxygen_config.txt
+        run: doxygen
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
