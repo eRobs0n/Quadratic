@@ -17,6 +17,12 @@ const int _GRID_LINES_WIDTH = 2;
 const int _GRID_TEXT_PADDING = 5;
 const int _GRID_FONT_SIZE = 16;
 const int _NUM_POINTS = 100;
+const int _MAX_ROOT_POINTS = 3;
+const int _ROOT_POINTS_RADIUS = 6;
+const int _CURSOR_POINT_RADIUS = 4;
+const int _CURSOR_TEXT_PADDING_VERTICAL = -24;
+const int _CURSOR_TEXT_PADDING_HORIZONTAL = -44;
+const int _CURSOR_MAGNET_DISTANCE = 7;
 
 //Global variable for font. Will be initialized on _LoadResources
 Font __NUMBERS_FONT;
@@ -251,15 +257,6 @@ void _DrawFunction(const Grid* grid,
 	}
 }
 
-void _DrawPlot(const struct Grid* g, const struct EquationCoeffs* coeffs, const struct Vector2 bounds){
-	_DrawGrid(g);
-    _DrawAxes(g);
-    if (isfinite(bounds.x) && isfinite(bounds.y)){
-    	_DrawFunction(g, /*&GetQuadraticValue,*/ coeffs, bounds);
-    }
-}
-
-
 void GraphMode(const struct EquationCoeffs* coeffs){
 	Grid g = {{screenWidth/2, screenHeight/2}, {1, 1}, 60.f};
 
@@ -271,15 +268,26 @@ void GraphMode(const struct EquationCoeffs* coeffs){
 
 	SetWindowIcon(__ICON);
 
-	//Font axe_numbers = LoadFontEx("SFProText-Medium.ttf", _GRID_FONT_SIZE, 0, 250);
-
     SetTargetFPS(60);
 
     Vector2 bounds = _GetBounds(&g, *coeffs);
-    DEBUG printf("Bounds: left = %g right = %g\n", bounds.x, bounds.y);
+
+ 	EquationSolutions roots = {};
+ 	SolveEquation(coeffs, &roots);
+ 	Vector2 root_points[_MAX_ROOT_POINTS] = {};
+ 	switch (roots.nRoots){
+ 	case ONE_ROOT:
+ 		root_points[0] = {(float)roots.root1, 0};
+ 		break;
+ 	case TWO_ROOTS:
+ 		root_points[0] = {(float)roots.root1, 0};
+ 		root_points[1] = {(float)roots.root2, 0};
+ 		break;
+ 	default:
+ 		break;
+ 	}
 
     while (!WindowShouldClose()){
-
     	if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
         {
             Vector2 delta = GetMouseDelta();
@@ -299,8 +307,27 @@ void GraphMode(const struct EquationCoeffs* coeffs){
         bounds = _GetBounds(&g, *coeffs);
     	BeginDrawing();
     		ClearBackground(RAYWHITE);
-    		_DrawPlot(&g, coeffs, bounds);
-    		
+    		_DrawGrid(&g);
+   			_DrawAxes(&g);
+    		if (isfinite(bounds.x) && isfinite(bounds.y)){
+    			_DrawFunction(&g, /*&GetQuadraticValue,*/ coeffs, bounds);
+    		}	
+
+    		for(int i = 0; i < roots.nRoots; i++){
+    			Vector2 screen_root_point = _GridToScreen(&g, root_points[i]);
+    			DrawCircleV(screen_root_point, _ROOT_POINTS_RADIUS, RED);
+    			if(Vector2Distance(screen_root_point, GetMousePosition()) < _CURSOR_MAGNET_DISTANCE){
+    				SetMousePosition(screen_root_point.x, screen_root_point.y);
+    			}
+    		}
+
+    		DrawCircleV(GetMousePosition(), _CURSOR_POINT_RADIUS, DARKGRAY);
+    		Vector2 mouseOnGrid = _ScreenToGrid(&g, GetMousePosition());
+            DrawTextEx(__NUMBERS_FONT, TextFormat("[%.2f, %.2f]", mouseOnGrid.x, mouseOnGrid.y),
+                Vector2Add(GetMousePosition(), 
+                (Vector2){ _CURSOR_TEXT_PADDING_HORIZONTAL, _CURSOR_TEXT_PADDING_VERTICAL}), 
+                _GRID_FONT_SIZE, 2, BLACK);
+
     	EndDrawing();
     }
 }
