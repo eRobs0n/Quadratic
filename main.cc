@@ -3,6 +3,7 @@
 #include "cmd_flags.h"
 #include "test.h"
 #include "ai.h"
+#include "plot.h"
 
 //! Run manual mode, user must enter coefficients
 void RunManualMode(int accuracy){
@@ -32,6 +33,8 @@ void RunExpressionMode(int accuracy){
 	SolveEquation(&coeffs, &roots);
 
 	PrintRoots(&roots, accuracy);
+
+	GraphMode(&coeffs);
 }
 
 int main(int argc, char* argv[]){
@@ -51,7 +54,8 @@ int main(int argc, char* argv[]){
 	if (is_ai)
 		AiMode();
 	else
+		//RunManualMode(2);
 		RunExpressionMode(accuracy);
-	
+
 	return 0;
 }

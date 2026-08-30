@@ -15,7 +15,7 @@ void RequestCard(){
 	fflush(stdout);
 
 	DisableTerminalEcho();
-	char c = 0;
+	int c = 0;
 	int cnt_nm = 0;
 	while((c = getchar()) != '\n' && c != EOF && cnt_nm < 16){
 		if (isdigit(c)){

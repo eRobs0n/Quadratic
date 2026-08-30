@@ -23,6 +23,7 @@ enum TermCoefficient _ProcessTerm(const char* t, double* coeff){
 		debug_printf("_ProcessTerm: parsed %d values %s\n", parseCnt, var);
 	#endif
 
+	bool is_negative = false;
 	if (parseCnt == 0){
 		#ifdef _DEBUG_PARSER
 		debug_printf("_ProcessTerm: Isn't full term\n");
@@ -30,6 +31,9 @@ enum TermCoefficient _ProcessTerm(const char* t, double* coeff){
 
 		parseCnt = sscanf(t, "%s", var);
 		t_coeff = 1;
+		if (var[0] == '-') is_negative = true;
+		StrSqueeze(var, '-');
+		StrSqueeze(var, '+');
 	}
 
 	if (strlen(var) == 0){
@@ -37,10 +41,6 @@ enum TermCoefficient _ProcessTerm(const char* t, double* coeff){
 		return CONSTANT_TERM;
 	}
 
-	bool is_negative = false;
-	if (var[0] == '-') is_negative = true;
-	StrSqueeze(var, '-');
-	StrSqueeze(var, '+');
 
 	for (unsigned i = 0; i < ARR_LEN(_LEADING_VAR_STRINGS); i++){
 		if (strcmp(var, _LEADING_VAR_STRINGS[i]) == 0){
@@ -106,17 +106,18 @@ enum ParsingStatus ParseExpression(const char* expr, struct EquationCoeffs* coef
 	#ifdef _DEBUG_PARSER
 		debug_printf("ParseExpression: After moving terms to the left %s\n", expr_cpy);
 	#endif
-
-	const  char* token_ptr = expr_cpy;
+		#define DEBUG if (0)
+	const char* token_ptr = expr_cpy;
 	char term[MAX_TERM_LENGTH] = {0};
 	
 	struct EquationCoeffs calc_coeffs = 
 		{.coeff_of_sq_x = 0., .coeff_of_x = 0., .free_coeff = 0};
 
 	while ((token_ptr = SepByTerms(token_ptr, term, MAX_TERM_LENGTH)) != NULL){
-		#ifdef _DEBUG_PARSER
-			//debug_printf("ParseExpression: separated term %s\n", term);
-		#endif
+		//#ifdef _DEBUG_PARSER
+
+			DEBUG debug_printf("ParseExpression: separated term %s\n", term);
+		//#endif
 
 		double pred_coeff = 0.;
 		enum TermCoefficient type = _ProcessTerm(term, &pred_coeff);
@@ -157,7 +158,7 @@ enum ParsingStatus ParseExpression(const char* expr, struct EquationCoeffs* coef
 	*coeff = calc_coeffs;
 	return PARSING_OK;
 }
-
+//strtok
 const char* SepByTerms(const char* str, char* term, size_t max_term_length){
    if (*str == '\0') return NULL;
    char c;

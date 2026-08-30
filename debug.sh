@@ -1,7 +1,7 @@
  rm ./build/debug.out
 
 cc -x c++ main.cc \
-d_math.cc solver.cc parser.cc io.cc test.cc cmd_flags.cc console.cc ai.cc \
+d_math.cc solver.cc parser.cc io.cc test.cc cmd_flags.cc console.cc ai.cc plot.cc \
 -D _DEBUG -ggdb3 -std=c++17 \
 -Wall -Wextra -Weffc++ -Wc++14-compat -Wmissing-declarations -Wcast-align -Wcast-qual -Wchar-subscripts -Wconversion -Wctor-dtor-privacy -Wempty-body -Wfloat-equal -Wformat-security \
 -Wformat-signedness -Wformat=2 -Winline -Wnon-virtual-dtor -Woverloaded-virtual -Wpacked -Wpointer-arith -Winit-self \
@@ -11,6 +11,7 @@ d_math.cc solver.cc parser.cc io.cc test.cc cmd_flags.cc console.cc ai.cc \
 -fcheck-new -fsized-deallocation -fstack-protector -fstrict-overflow \
 -fno-omit-frame-pointer -Wlarger-than=8192 -fPIE -Werror=vla \
 -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr \
+$(pkg-config --libs --cflags raylib) \
  -o build/debug.out
 
 ./build/debug.out $*

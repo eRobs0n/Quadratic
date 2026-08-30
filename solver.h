@@ -35,22 +35,33 @@ bool CompareSolutions(const struct EquationSolutions* a, const struct EquationSo
 bool CompareCoeffs(const struct EquationCoeffs* a, const struct EquationCoeffs* b);
 
 /**
+ * Solve linear
  * @param [in] coeffs Pointer to equation coefficients
  * @param [out] roots Pointer to the roots
 */
 void SolveLinear(const struct EquationCoeffs* coeffs, struct EquationSolutions* roots);
 
 /**
+ * Solve quadratic
  * @param [in] coeffs Pointer to equation coefficients
  * @param [out] roots Pointer to the roots
 */
 void SolveQuadratic(const struct EquationCoeffs* coeffs, struct EquationSolutions* roots);
 
 /**
+ * Solve equation (linear or quadratic)
  * @param [in] coeffs Pointer to equation coefficients
  * @param [out] roots Pointer to the roots
 */
 void SolveEquation(const struct EquationCoeffs* coeffs, struct EquationSolutions* roots);
+
+/**
+ * Get value of expression (y) y = ax^2+bx+c
+ * @param [in] coeffs Pointer to equation coefficients
+ * @param [in] x Variable x
+ * @returns value of expression
+ */
+double GetQuadraticValue(const struct EquationCoeffs* coeffs, double x);
 
 #endif /*__SOLVER__*/
 

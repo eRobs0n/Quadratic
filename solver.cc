@@ -88,3 +88,8 @@ bool CompareCoeffs(const struct EquationCoeffs* a, const struct EquationCoeffs* 
 		   Equals(a->free_coeff, b->free_coeff);
 }
 
+double GetQuadraticValue(const struct EquationCoeffs* coeffs, double x){
+	assert(coeffs != NULL);
+
+	return coeffs->coeff_of_sq_x * x * x + coeffs->coeff_of_x * x + coeffs->free_coeff;
+}

@@ -34,7 +34,7 @@ struct ParserTestCase spec_parser_tests[] = {
 	{"5x^2 = 4x - 12 + 32 - 1*x^2", { 6, -4, 20}, 			PARSING_OK},
 	{"=52", 						{ NAN, NAN, NAN}, 		PARSING_ERROR},
 	{"4x=2=2-5*x",   				{ NAN, NAN, NAN},       PARSING_ERROR},
-	{"aboba worng string",			{ NAN, NAN, NAN},		PARSING_ERROR},
+	{"aboba wrong string",			{ NAN, NAN, NAN},		PARSING_ERROR},
 	{"x*x+x^2+x=2=2=2",				{ NAN, NAN, NAN},		PARSING_ERROR},
 	{"x^2=+-x^2",					{ NAN, NAN, NAN},		PARSING_ERROR}
 };
@@ -168,7 +168,8 @@ void GenParserTests(size_t test_cnt, struct ParserTestCase* tests){
 		for(int j = 0; j < _MAX_TERMS_FOR_PARSER_TEST; j++){
 			char rand_term[MAX_TERM_LENGTH] = {0};
 	
-			enum TermCoefficient t_type = (enum TermCoefficient) GetRandInBounds(CONSTANT_TERM, TERM_COEFFICIENT_MAX_VAL-1); 
+			enum TermCoefficient t_type = (enum TermCoefficient) 
+				GetRandInBounds(CONSTANT_TERM, TERM_COEFFICIENT_MAX_VAL-1); 
 			double one_cf = _GenRandTerm(MAX_TERM_LENGTH, rand_term, t_type);
 			switch (t_type){
 			case INVALID_TERM:
