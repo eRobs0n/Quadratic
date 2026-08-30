@@ -8,6 +8,9 @@
 #include <math.h>
 #include <unistd.h>
 
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
+
 #define DEBUG if (0)
 
 const int screenWidth = 700;
@@ -23,6 +26,9 @@ const int _CURSOR_POINT_RADIUS = 4;
 const int _CURSOR_TEXT_PADDING_VERTICAL = -24;
 const int _CURSOR_TEXT_PADDING_HORIZONTAL = -44;
 const int _CURSOR_MAGNET_DISTANCE = 7;
+const float _MIN_GRID_STEP = 1e-4;
+const float _MAX_GRID_STEP = 1e4;
+const float _ZOOM_CHANGE_FACTOR = 2.1;
 
 //Global variable for font. Will be initialized on _LoadResources
 Font __NUMBERS_FONT;
@@ -258,7 +264,7 @@ void _DrawFunction(const Grid* grid,
 }
 
 void GraphMode(const struct EquationCoeffs* coeffs){
-	Grid g = {{screenWidth/2, screenHeight/2}, {1, 1}, 60.f};
+	Grid g = {{screenWidth/2., screenHeight/2.}, {1, 1}, 60.f};
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
@@ -295,13 +301,19 @@ void GraphMode(const struct EquationCoeffs* coeffs){
         }
 
         //TODO fix zoom and step changes
-        if (IsKeyPressed(KEY_DOWN)){
-        	g.zoom /= 2.1;
-        	g.step.x *= 2; g.step.y *= 2;
-        }
         if (IsKeyPressed(KEY_UP)){
-        	g.zoom *= 2.1;
-        	g.step.x /= 2; g.step.y /=2;
+        	if (g.step.x > _MIN_GRID_STEP && g.step.y > _MIN_GRID_STEP){
+        		g.zoom *= _ZOOM_CHANGE_FACTOR;
+        		g.step.x /= 2;
+        		g.step.y /= 2;  		
+        	}
+        }
+        if (IsKeyPressed(KEY_DOWN)){
+        	if (g.step.x < _MAX_GRID_STEP && g.step.y < _MAX_GRID_STEP){
+        		g.zoom /= _ZOOM_CHANGE_FACTOR;
+        		g.step.x *= 2;
+        		g.step.y *= 2;
+        	}
         }
 
         bounds = _GetBounds(&g, *coeffs);

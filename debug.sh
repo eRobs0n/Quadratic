@@ -1,7 +1,6 @@
  rm ./build/debug.out
-
-cc -x c++ main.cc \
-d_math.cc solver.cc parser.cc io.cc test.cc cmd_flags.cc console.cc ai.cc plot.cc \
+cp -r ./res build/res
+cc -x c++ src/*.cc -I./include -I./external/raygui/src \
 -D _DEBUG -ggdb3 -std=c++17 \
 -Wall -Wextra -Weffc++ -Wc++14-compat -Wmissing-declarations -Wcast-align -Wcast-qual -Wchar-subscripts -Wconversion -Wctor-dtor-privacy -Wempty-body -Wfloat-equal -Wformat-security \
 -Wformat-signedness -Wformat=2 -Winline -Wnon-virtual-dtor -Woverloaded-virtual -Wpacked -Wpointer-arith -Winit-self \
